@@ -36,6 +36,8 @@ st.markdown(f"""<style>
 .sp-sum ol {{ margin: 0.5rem 0 0.3rem 1.1rem; padding: 0; }}
 .sp-sum li {{ margin-bottom: 0.35rem; }}
 .sp-sum li::marker {{ color: {GOLD_INK}; font-weight: 800; }}
+.sp-crowd {{ border: 1px solid {LINE}; border-top: 4px solid; border-radius: 10px; padding: 0.7rem 0.9rem; margin-bottom: 0.9rem; font-size: 0.92rem; }}
+.sp-crowd p {{ margin: 0 0 0.35rem 0 !important; }}
 .sp-verdict {{ border-left: 4px solid {GOLD}; background: #f6efe4; padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 0.8rem; }}
 .sp-verdict .g {{ font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.35rem; }}
 .sp-dot {{ display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }}
@@ -87,10 +89,10 @@ with st.sidebar:
                       help="Our card is our recommendation. You can edit any price in the Price card tab.")
 
 kpis = st.container()
-tabs = st.tabs(["Price card", "Upcoming shows", "Plan a new show", "Price sensitivity", "Past shows", "How it works"])
+tabs = st.tabs(["Our groups", "Price card", "Upcoming shows", "Plan a new show", "Price sensitivity", "Past shows", "How it works"])
 
 # ---------- price card ----------
-with tabs[0]:
+with tabs[1]:
     heading("Price card")
     st.caption("Type a price in any cell and every number in the app updates. The last column is today's menu price.")
     base = M.PRESETS[preset]()
@@ -125,6 +127,52 @@ with tabs[0]:
                  "Change": f'{signed(t["g1"] - t["g0"])} ({pct(t["g1"] / t["g0"] - 1)})'})
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
 
+
+# ---------- our groups ----------
+# notebook section 6: leave-one-performer-out error by way of grouping
+BACKTEST = [{'label': 'No groups (one average for every show)', 'error': 34.0, 'ours': False},
+            {'label': 'k-means clusters (4)', 'error': 28.4, 'ours': False},
+            {'label': 'Family or daytime vs adult evening', 'error': 27.3, 'ours': False},
+            {'label': 'Event type and time of day', 'error': 27.3, 'ours': False},
+            {'label': 'Crowd type (bar score)', 'error': 24.9, 'ours': False},
+            {'label': '4 show tiers', 'error': 24.6, 'ours': False},
+            {'label': 'Our first pick (pop inside Social)', 'error': 24.0, 'ours': False},
+            {'label': 'Genre tiers (4 groups)', 'error': 23.5, 'ours': False},
+            {'label': 'Genre', 'error': 23.6, 'ours': False},
+            {'label': 'Our 5 groups', 'error': 21.8, 'ours': True}]
+CROWD_RULES = {"Family Day": "Family shows where fewer than half the buyers are men",
+               "Family Night & Sports": "Sports events, and family shows where at least half the buyers are men",
+               "Pop": "Pop concerts", "Social": "Hip-hop/R&B, comedy and other adult shows", "Bar": "Rock and country concerts"}
+with tabs[0]:
+    heading("Meet the five crowds")
+    st.caption('36 past shows; "per fan" means per ticket sold.')
+    ccols = st.columns(3)
+    for k, g in enumerate(M.GROUPS):
+        hs = [h for h in M.DATA["history"] if h["group"] == g]
+        r = {i: sum(h["items"][i][0] / h["tickets"] * 1000 for h in hs) / len(hs) for i in M.KEYS}
+        stt, c = M.DATA["groupStats"][g], M.DATA["defaultCard"][g]
+        prices = " · ".join(f"{M.SHORT[i]} &#36;{c[i]:.2f}" for i in M.KEYS)
+        ccols[k % 3].markdown(
+            f'<div class="sp-crowd" style="border-top-color:{M.GROUP_COLORS[g]}"><p>{dot(g)}<b>{g}</b> <span style="color:#85797f">· {stt["shows"]} past shows</span></p>'
+            f'<p style="color:#51474c">{CROWD_RULES[g]}</p>'
+            f'<p><b>&#36;{stt["alc"]:.2f}</b> on alcohol and <b>&#36;{stt["spend"]:.2f}</b> on all concessions per fan</p>'
+            f'<p style="color:#85797f">Per 1,000 fans: {round(r["water"])} waters, {round(r["cocktail"])} cocktails, {round(r["fountain"])} fountain drinks, '
+            f'{round(r["pretzel"])} pretzels, {round(r["michelob"])} beers</p><p><span style="color:#85797f">Our prices:</span> {prices}</p></div>',
+            unsafe_allow_html=True)
+    heading("How we picked the groups")
+    st.caption("For each way of grouping the 36 past shows, we hid every show by one act, predicted its sales of the five items from the "
+               "other shows in its group, and compared with what it really sold. Lower is better. Our five groups had the lowest error of these "
+               "ten. Add-ons we also tried (group totals, demographic adjustments, a different grouping per item) were at best about 1 point "
+               "better, and with 36 shows a gap that small can be luck, so we kept the simple rule.")
+    bdf = pd.DataFrame(BACKTEST)
+    y = alt.Y("label:N", sort=alt.EncodingSortField(field="error", order="descending"), title=None, axis=alt.Axis(labelLimit=320))
+    bars = alt.Chart(bdf).mark_bar(cornerRadiusEnd=3, height=18).encode(
+        y=y, x=alt.X("error:Q", title="Backtest error (%)", scale=alt.Scale(domain=[0, 37])),
+        color=alt.condition("datum.ours", alt.value(WINE), alt.value("#c4bcc0")),
+        tooltip=[alt.Tooltip("label:N", title="Grouping"), alt.Tooltip("error:Q", title="Error %", format=".1f")])
+    labels = alt.Chart(bdf).mark_text(align="left", dx=5, fontWeight="bold").encode(y=y, x="error:Q", text=alt.Text("error:Q", format=".1f"))
+    st.altair_chart((bars + labels).properties(height=340), width="stretch")
+
 # ---------- headline numbers ----------
 fa = M.forecast_all(card, scenario, sens)
 tot = M.totals(card, scenario, sens)
@@ -140,7 +188,7 @@ with kpis:
                 delta_color="off", delta_arrow="off")
 
 # ---------- upcoming shows ----------
-with tabs[1]:
+with tabs[2]:
     heading("The 9 upcoming shows")
     lows = {s["e"]: f["gross"] for s, f in M.forecast_all(card, "low", sens)}
     highs = {s["e"]: f["gross"] for s, f in M.forecast_all(card, "high", sens)}
@@ -176,7 +224,7 @@ with tabs[1]:
     st.dataframe(pd.DataFrame(long_rows), hide_index=True, width="stretch", height=35 * (len(long_rows) + 1) + 3)
 
 # ---------- plan a new show ----------
-with tabs[2]:
+with tabs[3]:
     heading("Plan a new show")
     st.caption("Our grouping rule on a show that is not on the schedule yet.")
     left, right = st.columns([1, 2], gap="large")
@@ -200,7 +248,7 @@ with tabs[2]:
         st.caption(note + " Prices come from the price card.")
 
 # ---------- price sensitivity ----------
-with tabs[3]:
+with tabs[4]:
     heading("What if fans react more or less to price?")
     st.caption("Our data can't measure price sensitivity, because the menu price was the same at every past show. So we borrow it "
                "from published studies. These charts run the price card with sensitivity anywhere from 0x (fans ignore prices) "
@@ -242,7 +290,7 @@ with tabs[3]:
                                    for c in curve if round(c["s"], 2) in SENS_OPTIONS]), hide_index=True, width="stretch")
 
 # ---------- past shows ----------
-with tabs[4]:
+with tabs[5]:
     heading("Every show and its group")
     st.caption("36 past shows and the 9 upcoming shows (in bold).")
     gcols = st.columns(3)
@@ -275,7 +323,7 @@ with tabs[4]:
                      column_config={c: st.column_config.NumberColumn(format="$%.2f") for c in ["Alcohol per fan", "Food and soft drinks per fan", "All concessions per fan"]})
 
 # ---------- how it works ----------
-with tabs[5]:
+with tabs[6]:
     heading("How the numbers are built")
     st.markdown("""
 - **Groups**, in order: a sports event, or a family show where at least half the ticket buyers are men = **Family Night & Sports**;
