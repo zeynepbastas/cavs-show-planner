@@ -32,6 +32,10 @@ st.markdown(f"""<style>
 .sp-h {{ font-family: 'Montserrat', sans-serif; color: {WINE}; text-transform: uppercase; letter-spacing: 0.03em;
   font-weight: 800; font-size: 1.1rem !important; margin: 0.4rem 0 0.2rem !important; }}
 .sp-h::after {{ content: ""; display: block; width: 40px; height: 4px; border-radius: 2px; background: {GOLD}; margin-top: 0.45rem; }}
+.sp-sum {{ border-left: 4px solid {GOLD}; background: #faf7f9; border-radius: 10px; padding: 0.9rem 1.2rem 0.5rem; margin: 0.4rem 0 1.1rem; }}
+.sp-sum ol {{ margin: 0.5rem 0 0.3rem 1.1rem; padding: 0; }}
+.sp-sum li {{ margin-bottom: 0.35rem; }}
+.sp-sum li::marker {{ color: {GOLD_INK}; font-weight: 800; }}
 .sp-verdict {{ border-left: 4px solid {GOLD}; background: #f6efe4; padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 0.8rem; }}
 .sp-verdict .g {{ font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.35rem; }}
 .sp-dot {{ display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }}
@@ -64,9 +68,11 @@ st.markdown("""<div class="sp-head">
 <p class="sp-title">Show Planner</p><div class="sp-bar"></div>
 <p class="sp-lede">Place any show in one of five crowd groups, forecast what its fans will buy, and test prices before the doors open.
 Every number updates as you change the settings, starting from the choices our team made.</p>
-<p class="sp-team"><span>Zeynep Baştaş</span><span>Blessing Masanga</span><span>Daniel Youngquist</span></p>
+<p class="sp-team"><span>Blessing Masanga</span><span>Daniel Youngquist</span><span>Zeynep Bastas</span></p>
 <p class="sp-school">Case Western Reserve University</p>
 </div>""", unsafe_allow_html=True)
+
+st.markdown("""<div class="sp-sum"><p class="sp-h">The short version</p><ol><li><b>Five crowd groups, one simple rule.</b> A sports event, or a family show where most buyers are men: Family Night &amp; Sports. Other family shows: Family Day. Rock or country concert: Bar. Pop concert: Pop. Everything else: Social.</li><li><b>The groups make forecasts more accurate.</b> Predicting each act from the other shows in its group cuts the error from 34% (no groups) to 22%.</li><li><b>Each crowd buys differently.</b> Bar crowds spend 7 times more on alcohol per fan than Family Day (&#36;13.30 vs &#36;1.80). Pop fans buy the most water, while hip-hop and comedy crowds lean on cocktails.</li><li><b>Prices flex by group.</b> Water &#36;4.99 everywhere and family prices for both family groups. Adult crowds pay a little more for drinks: cocktails &#36;30.25 and Michelob &#36;17.49 at Pop and Social shows, and &#36;30.99 and &#36;17.99 at Bar shows.</li><li><b>For the 9 upcoming shows:</b> &#36;1,055 more than at the old prices (+0.5%) and 4.0% more items sold, at our card and the base crowd. The card stays ahead of the old prices at every price sensitivity we tested, from 0x to 2x.</li></ol></div>""", unsafe_allow_html=True)
 
 # ---------- settings ----------
 SENS_OPTIONS = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
@@ -161,6 +167,14 @@ with tabs[1]:
                  "Gross": money0(tot["gross"]), "vs old prices": signed(tot["gross"] - tot["gross_old"]), "Based on": ""})
     st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
 
+    heading("Forecast for every show and item")
+    st.caption("Projected units, recommended price and projected gross sales for each of the five top items. "
+               "With Our card, Base crowd and 1x sensitivity, these are the numbers in upcoming_forecast.csv.")
+    long_rows = [{"Show": f'{s["e"]} ({s["p"]})', "Group": s["group"], "Item": r["item_name"], "Projected units": f'{r["projected_units"]:,}',
+                  "Recommended price": f'${r["recommended_price"]:.2f}', "Projected gross": f'${r["projected_gross_sales"]:,.2f}'}
+                 for s, f in fa for r in f["rows"]]
+    st.dataframe(pd.DataFrame(long_rows), hide_index=True, width="stretch", height=35 * (len(long_rows) + 1) + 3)
+
 # ---------- plan a new show ----------
 with tabs[2]:
     heading("Plan a new show")
@@ -229,6 +243,16 @@ with tabs[3]:
 
 # ---------- past shows ----------
 with tabs[4]:
+    heading("Every show and its group")
+    st.caption("36 past shows and the 9 upcoming shows (in bold).")
+    gcols = st.columns(3)
+    for k, g in enumerate(M.GROUPS):
+        past = [h["e"] for h in M.DATA["history"] if h["group"] == g]
+        nxt = [s["e"] for s in M.DATA["upcoming"] if s["group"] == g]
+        gcols[k % 3].markdown(f'{dot(g)}<b>{g}</b><br><span style="color:#85797f">Past ({len(past)}):</span> {", ".join(past)}<br>'
+                              f'<span style="color:#85797f">Upcoming:</span> {", ".join(f"<b>{e}</b>" for e in nxt) if nxt else "none on the schedule yet"}',
+                              unsafe_allow_html=True)
+
     heading("Past shows by group")
     st.caption("Each panel lights up one group; the gray dots are all the other past shows. Across: alcohol per ticket. "
                "Up: food and soft drinks per ticket. Hover a dot for the show.")

@@ -7,7 +7,10 @@ import contextlib
 import io
 import json
 
-nb = json.load(open("analysis/CWRU_Concessions_Analysis.ipynb"))
+import pathlib
+
+NB = next(p for p in [pathlib.Path("analysis/CWRU_Concessions_Analysis.ipynb"), pathlib.Path("../CWRU_Concessions_Analysis.ipynb")] if p.exists())
+nb = json.load(open(NB))
 cells = ["".join(c["source"]) for c in nb["cells"] if c["cell_type"] == "code"]
 env = {"display": lambda *a, **k: None}
 with contextlib.redirect_stdout(io.StringIO()):
