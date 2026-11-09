@@ -32,6 +32,10 @@ st.markdown(f"""<style>
 .sp-h {{ font-family: 'Montserrat', sans-serif; color: {WINE}; text-transform: uppercase; letter-spacing: 0.03em;
   font-weight: 800; font-size: 1.1rem !important; margin: 0.4rem 0 0.2rem !important; }}
 .sp-h::after {{ content: ""; display: block; width: 40px; height: 4px; border-radius: 2px; background: {GOLD}; margin-top: 0.45rem; }}
+.sp-sum {{ border-left: 4px solid {GOLD}; background: #faf7f9; border-radius: 10px; padding: 0.9rem 1.2rem 0.5rem; margin: 0.4rem 0 1.1rem; }}
+.sp-sum ol {{ margin: 0.5rem 0 0.3rem 1.1rem; padding: 0; }}
+.sp-sum li {{ margin-bottom: 0.35rem; }}
+.sp-sum li::marker {{ color: {GOLD_INK}; font-weight: 800; }}
 .sp-verdict {{ border-left: 4px solid {GOLD}; background: #f6efe4; padding: 0.8rem 1rem; border-radius: 8px; margin-bottom: 0.8rem; }}
 .sp-verdict .g {{ font-family: 'Montserrat', sans-serif; font-weight: 800; font-size: 1.35rem; }}
 .sp-dot {{ display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }}
@@ -67,6 +71,8 @@ Every number updates as you change the settings, starting from the choices our t
 <p class="sp-team"><span>Zeynep Baştaş</span><span>Blessing Masanga</span><span>Daniel Youngquist</span></p>
 <p class="sp-school">Case Western Reserve University</p>
 </div>""", unsafe_allow_html=True)
+
+st.markdown("""<div class="sp-sum"><p class="sp-h">The short version</p><ol><li><b>Five crowd groups, one simple rule.</b> A sports event, or a family show where most buyers are men: Family Night &amp; Sports. Other family shows: Family Day. Rock or country concert: Bar. Pop concert: Pop. Everything else: Social.</li><li><b>The groups make forecasts more accurate.</b> Predicting each act from the other shows in its group cuts the error from 34% (no groups) to 22%.</li><li><b>Each crowd buys differently.</b> Bar crowds spend 7 times more on alcohol per fan than Family Day (&#36;13.30 vs &#36;1.80). Pop fans buy the most water, while hip-hop and comedy crowds lean on cocktails.</li><li><b>Prices flex by group.</b> Water &#36;4.99 everywhere, family prices for both family groups, today's menu for Pop and Social, and &#36;1.00 more on beer and &#36;2.20 more on cocktails for Bar.</li><li><b>For the 9 upcoming shows:</b> about the same money as today's prices (+0.2%) with 4.4% more items sold, at our card and the base crowd.</li></ol></div>""", unsafe_allow_html=True)
 
 # ---------- settings ----------
 SENS_OPTIONS = [0.0, 0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
