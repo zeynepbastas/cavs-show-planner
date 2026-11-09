@@ -59,7 +59,7 @@ recommend prices that flex by group, and build a visual a business leader can re
 | `event_groups.csv` | The group for all 45 shows (36 past, 9 upcoming) |
 | `upcoming_forecast.csv` | Units, recommended price and gross for the 5 items at the 9 upcoming shows |
 | `show-planner/` | The Streamlit app: `streamlit_app.py`, `model.py` (the formulas) and `data.json` (the numbers) |
-| `exploration/` | Our early exploration notebook and first ideas, the 260-scheme grouping search from our write-up (`Cavs_260_broad_grouping_tests/`), and a second script that rebuilds the same 45 groups (its forecast part is an earlier, simpler version) |
+| `exploration/` | Our early exploration notebook and first ideas, the 260-scheme grouping search from our write-up (`Cavs_260_broad_grouping_tests.zip`: unzip it, add the challenge CSVs to its `data` folder and run `broad_search.py`), and a second script that rebuilds the same 45 groups (its forecast part is an earlier, simpler version) |
 
 ## Run it yourself
 
