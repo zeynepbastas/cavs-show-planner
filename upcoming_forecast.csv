@@ -1,0 +1,46 @@
+event_id,item_name,projected_units,recommended_price,projected_gross_sales
+E109,20oz Dasani Water,786,4.99,3922.14
+E109,Double Cocktail,116,22.99,2666.84
+E109,24oz Fountain Drink,491,6.49,3186.59
+E109,Bavarian Pretzel,478,7.49,3580.22
+E109,16oz Michelob Ultra,162,12.99,2104.38
+E110,20oz Dasani Water,1830,4.99,9131.70
+E110,Double Cocktail,784,30.99,24296.16
+E110,24oz Fountain Drink,400,7.79,3116.00
+E110,Bavarian Pretzel,402,10.59,4257.18
+E110,16oz Michelob Ultra,744,17.99,13384.56
+E111,20oz Dasani Water,500,4.99,2495.00
+E111,Double Cocktail,89,22.99,2046.11
+E111,24oz Fountain Drink,393,6.49,2550.57
+E111,Bavarian Pretzel,250,7.49,1872.50
+E111,16oz Michelob Ultra,33,12.99,428.67
+E115,20oz Dasani Water,1876,4.99,9361.24
+E115,Double Cocktail,468,30.25,14157.00
+E115,24oz Fountain Drink,567,7.79,4416.93
+E115,Bavarian Pretzel,465,10.59,4924.35
+E115,16oz Michelob Ultra,265,17.49,4634.85
+E121,20oz Dasani Water,690,4.99,3443.10
+E121,Double Cocktail,341,30.25,10315.25
+E121,24oz Fountain Drink,177,7.79,1378.83
+E121,Bavarian Pretzel,154,10.59,1630.86
+E121,16oz Michelob Ultra,163,17.49,2850.87
+E129,20oz Dasani Water,2304,4.99,11496.96
+E129,Double Cocktail,661,30.25,19995.25
+E129,24oz Fountain Drink,665,7.79,5180.35
+E129,Bavarian Pretzel,487,10.59,5157.33
+E129,16oz Michelob Ultra,379,17.49,6628.71
+E133,20oz Dasani Water,486,4.99,2425.14
+E133,Double Cocktail,208,30.99,6445.92
+E133,24oz Fountain Drink,106,7.79,825.74
+E133,Bavarian Pretzel,107,10.59,1133.13
+E133,16oz Michelob Ultra,197,17.99,3544.03
+E142,20oz Dasani Water,614,4.99,3063.86
+E142,Double Cocktail,173,30.99,5361.27
+E142,24oz Fountain Drink,170,7.79,1324.30
+E142,Bavarian Pretzel,150,10.59,1588.50
+E142,16oz Michelob Ultra,85,17.99,1529.15
+E155,20oz Dasani Water,789,4.99,3937.11
+E155,Double Cocktail,63,30.99,1952.37
+E155,24oz Fountain Drink,151,7.79,1176.29
+E155,Bavarian Pretzel,187,10.59,1980.33
+E155,16oz Michelob Ultra,57,17.99,1025.43

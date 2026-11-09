@@ -1,0 +1,46 @@
+event_id,group,rule_applied,performer_id,event_type,genre,status
+E101,Family Night & Sports,Rule 1: Sports event,P01,Sports,Hockey,historical
+E103,Social,"Rule 5: everything else (Hip-Hop/R&B, Comedy)",P08,Comedy,Clean,historical
+E104,Bar,Rule 3: Rock or Country concert,P14,Concert,Rock,historical
+E105,Social,"Rule 5: everything else (Hip-Hop/R&B, Comedy)",P08,Comedy,Clean,historical
+E106,Bar,Rule 3: Rock or Country concert,P19,Concert,Rock,historical
+E107,Family Day,Rule 2: other Family show (43% male buyers),P25,Family,Sports,historical
+E108,Family Night & Sports,"Rule 1: Family show, 64% male buyers",P12,Family,Sports,historical
+E112,Bar,Rule 3: Rock or Country concert,P30,Concert,Country,historical
+E113,Social,"Rule 5: everything else (Hip-Hop/R&B, Comedy)",P32,Concert,Hip-Hop / R&B,historical
+E114,Family Day,Rule 2: other Family show (43% male buyers),P25,Family,Sports,historical
+E116,Pop,Rule 4: Pop concert,P06,Concert,Pop,historical
+E117,Social,"Rule 5: everything else (Hip-Hop/R&B, Comedy)",P13,Concert,Hip-Hop / R&B,historical
+E118,Family Day,Rule 2: other Family show (43% male buyers),P25,Family,Sports,historical
+E120,Pop,Rule 4: Pop concert,P24,Concert,Pop,historical
+E122,Bar,Rule 3: Rock or Country concert,P15,Concert,Rock,historical
+E124,Family Day,Rule 2: other Family show (44% male buyers),P03,Family,Sports,historical
+E125,Family Night & Sports,Rule 1: Sports event,P11,Sports,Combat,historical
+E126,Bar,Rule 3: Rock or Country concert,P10,Concert,Rock,historical
+E127,Pop,Rule 4: Pop concert,P16,Concert,Pop,historical
+E130,Family Day,Rule 2: other Family show (48% male buyers),P33,Family,Sports,historical
+E131,Family Night & Sports,"Rule 1: Family show, 64% male buyers",P12,Family,Sports,historical
+E132,Bar,Rule 3: Rock or Country concert,P02,Concert,Rock,historical
+E134,Social,"Rule 5: everything else (Hip-Hop/R&B, Comedy)",P07,Concert,Hip-Hop / R&B,historical
+E135,Bar,Rule 3: Rock or Country concert,P09,Concert,Rock,historical
+E136,Pop,Rule 4: Pop concert,P04,Concert,Pop,historical
+E138,Family Day,Rule 2: other Family show (43% male buyers),P25,Family,Sports,historical
+E140,Bar,Rule 3: Rock or Country concert,P31,Concert,Rock,historical
+E141,Social,"Rule 5: everything else (Hip-Hop/R&B, Comedy)",P22,Concert,Hip-Hop / R&B,historical
+E143,Bar,Rule 3: Rock or Country concert,P21,Concert,Rock,historical
+E144,Social,"Rule 5: everything else (Hip-Hop/R&B, Comedy)",P28,Comedy,Moderate,historical
+E145,Pop,Rule 4: Pop concert,P18,Concert,Pop,historical
+E147,Social,"Rule 5: everything else (Hip-Hop/R&B, Comedy)",P20,Concert,Hip-Hop / R&B,historical
+E148,Social,"Rule 5: everything else (Hip-Hop/R&B, Comedy)",P27,Concert,Hip-Hop / R&B,historical
+E150,Family Day,Rule 2: other Family show (43% male buyers),P25,Family,Sports,historical
+E151,Family Night & Sports,"Rule 1: Family show, 64% male buyers",P12,Family,Sports,historical
+E154,Social,"Rule 5: everything else (Hip-Hop/R&B, Comedy)",P17,Comedy,Moderate,historical
+E109,Family Day,Rule 2: other Family show (48% male buyers),P33,Family,Sports,upcoming
+E110,Bar,Rule 3: Rock or Country concert,P26,Concert,Rock,upcoming
+E111,Family Day,Rule 2: other Family show (44% male buyers),P03,Family,Sports,upcoming
+E115,Pop,Rule 4: Pop concert,P23,Concert,Pop,upcoming
+E121,Social,"Rule 5: everything else (Hip-Hop/R&B, Comedy)",P34,Concert,Hip-Hop / R&B,upcoming
+E129,Pop,Rule 4: Pop concert,P06,Concert,Pop,upcoming
+E133,Bar,Rule 3: Rock or Country concert,P29,Concert,Rock,upcoming
+E142,Bar,Rule 3: Rock or Country concert,P19,Concert,Rock,upcoming
+E155,Bar,Rule 3: Rock or Country concert,P19,Concert,Rock,upcoming

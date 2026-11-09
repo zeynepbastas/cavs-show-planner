@@ -1,0 +1,1024 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="author" content="Blessing Masanga, Daniel Youngquist, Zeynep Bastas">
+<title>Show Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Public+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout: one working board. Controls on top, the price card as a concession menu board,
+   then the 9 upcoming shows, a planner for a brand-new show, and the past shows for context. */
+:root {
+  --bg: #f3f4f7;
+  --surface: #ffffff;
+  --sunk: #eaecf1;
+  --ink: #141820;
+  --ink-2: #4b5361;
+  --ink-3: #79818f;
+  --line: #d8dce4;
+  --accent: #1d5fc4;
+  --accent-soft: #e3ecfb;
+  /* group colors: five slots of a validated categorical palette, adjacent pairs pass CVD + normal-vision checks */
+  --g-day: #1baf7a;
+  --g-night: #eb6834;
+  --g-pop: #6250d6;
+  --g-social: #eda100;
+  --g-bar: #2a78d6;
+  --up: #1d8655;
+  --down: #c13d2b;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --radius: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1217; --surface: #171b22; --sunk: #1e232c; --ink: #e8ebf0; --ink-2: #aab2be; --ink-3: #7e8794;
+    --line: #2c323d; --accent: #6ea4ff; --accent-soft: #1d2a40; --g-day: #199e70; --g-night: #d95926; --g-pop: #9085e9;
+    --g-social: #c98500; --g-bar: #3987e5; --up: #45c48c; --down: #ff7d69; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1217; --surface: #171b22; --sunk: #1e232c; --ink: #e8ebf0; --ink-2: #aab2be; --ink-3: #7e8794;
+  --line: #2c323d; --accent: #6ea4ff; --accent-soft: #1d2a40; --g-day: #199e70; --g-night: #d95926; --g-pop: #9085e9;
+  --g-social: #c98500; --g-bar: #3987e5; --up: #45c48c; --down: #ff7d69; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 28px; }
+h1, h2, h3 { font-family: var(--font-display); font-weight: 700; letter-spacing: 0.01em; line-height: 1.05; margin: 0; text-wrap: balance; }
+h1 { font-size: clamp(34px, 6vw, 52px); }
+h2 { font-size: 28px; }
+h3 { font-size: 20px; }
+p { margin: 0; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); }
+.lede { color: var(--ink-2); max-width: 66ch; }
+.muted { color: var(--ink-3); font-size: 13px; }
+.num { font-variant-numeric: tabular-nums; }
+header.top { display: grid; gap: 10px; }
+header.cover { padding: 26px 22px 22px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.team { display: flex; flex-wrap: wrap; gap: 2px 20px; margin-top: 6px; font-family: var(--font-display); font-size: 24px; font-weight: 700; line-height: 1.15; }
+.school { color: var(--ink-2); font-weight: 600; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font-size: 12.5px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: var(--sunk); color: var(--ink-2); }
+
+/* the short version */
+.summary { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px 18px; display: grid; gap: 10px; }
+.summary ol { margin: 0; padding-left: 20px; display: grid; gap: 7px; }
+.summary li { max-width: 100ch; }
+
+/* stat strip */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; display: grid; gap: 4px; min-width: 0; }
+.stat .label { font-size: 12.5px; color: var(--ink-3); font-weight: 600; }
+.stat .value { font-family: var(--font-display); font-size: 34px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat .sub { font-size: 13px; color: var(--ink-2); }
+.delta-up { color: var(--up); font-weight: 600; }
+.delta-down { color: var(--down); font-weight: 600; }
+.delta-flat { color: var(--ink-3); font-weight: 600; }
+.delta-price { color: var(--ink-3); }
+
+/* controls */
+.controls { display: flex; flex-wrap: wrap; gap: 18px 28px; align-items: end; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; }
+.control { display: grid; gap: 6px; }
+.control > .label { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--sunk); }
+.seg button { font: inherit; font-size: 13.5px; font-weight: 600; border: 0; background: transparent; color: var(--ink-2); padding: 7px 12px; cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+.btn { font: inherit; font-size: 13.5px; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 7px 12px; border-radius: 8px; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.btnrow { display: flex; flex-wrap: wrap; gap: 8px; }
+#status { min-height: 1.4em; font-size: 13px; color: var(--ink-2); }
+
+section.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 18px 16px 20px; display: grid; gap: 14px; min-width: 0; }
+.panel-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px 16px; }
+.scroll { overflow-x: auto; min-width: 0; }
+
+/* menu board */
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 8px 10px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th { font-size: 12.5px; color: var(--ink-3); font-weight: 600; vertical-align: bottom; }
+tfoot td { font-weight: 700; border-bottom: 0; }
+.scroll table th:first-child, .scroll table td:first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); }
+td.basis, th.basis { white-space: normal; min-width: 130px; max-width: 180px; text-align: left; font-size: 12.5px; line-height: 1.3; }
+.board td.item { font-weight: 600; }
+.board .size { color: var(--ink-3); font-weight: 400; }
+.price { display: inline-grid; gap: 2px; justify-items: end; }
+.price input { width: 86px; font: inherit; font-family: var(--font-mono); font-size: 14px; text-align: right; padding: 5px 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: var(--ink); }
+.price small { font-size: 11.5px; }
+.menu-col { color: var(--ink-3); font-family: var(--font-mono); font-size: 13.5px; }
+.gchip { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 13px; color: var(--ink); }
+.dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex: none; }
+.presets { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.pasttest { display: grid; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+
+/* price sensitivity check */
+.sens-headline { font-size: 15px; max-width: 80ch; }
+.senscharts { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.sfig { margin: 0; display: grid; gap: 6px; min-width: 0; }
+.sfig figcaption { font-size: 13.5px; }
+.sfig svg { width: 100%; height: auto; display: block; touch-action: pan-y; }
+.sfig svg:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+.stip { position: absolute; z-index: 5; pointer-events: none; display: grid; gap: 2px; min-width: 150px; padding: 8px 10px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 6px 18px rgba(0, 0, 0, 0.14); font-size: 13px; }
+.stip .v { font-weight: 700; font-variant-numeric: tabular-nums; }
+.sens-table summary { cursor: pointer; font-size: 13.5px; font-weight: 600; color: var(--ink-2); }
+.sens-table table { margin-top: 8px; }
+#sens-table tr.cur td { font-weight: 700; }
+
+/* upcoming */
+.rows { display: grid; gap: 6px; }
+.rowbar { display: grid; grid-template-columns: 190px 1fr 76px; gap: 10px; align-items: center; font-size: 13px; }
+.rowbar .who { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track { position: relative; height: 22px; }
+.track .whisker { position: absolute; top: 10px; height: 2px; background: var(--ink-3); opacity: 0.6; }
+.track .cap { position: absolute; top: 5px; width: 2px; height: 12px; background: var(--ink-3); opacity: 0.6; }
+.track .pt { position: absolute; top: 4px; width: 14px; height: 14px; border-radius: 50%; transform: translateX(-7px); border: 2px solid var(--surface); }
+.rowbar .val { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; }
+.axisnote { font-size: 12px; color: var(--ink-3); }
+
+/* every show and item */
+.scroll table.itemtable th, .scroll table.itemtable td { position: static; }
+.itemtable td.sh, .itemtable th.sh, .itemtable td.it, .itemtable th.it { text-align: left; }
+.itemtable td.sh { vertical-align: top; white-space: nowrap; }
+.itemtable tbody tr.first td { border-top: 2px solid var(--line); }
+.grouplist { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px 24px; }
+.gl { display: grid; gap: 4px; font-size: 13.5px; align-content: start; }
+.gl-h { display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+.gl p { line-height: 1.55; }
+
+/* planner */
+.planner { display: grid; grid-template-columns: minmax(0, 320px) minmax(0, 1fr); gap: 20px; }
+.form { display: grid; gap: 12px; align-content: start; }
+.field { display: grid; gap: 5px; }
+.field label { font-size: 12.5px; font-weight: 600; color: var(--ink-2); }
+.field select, .field input[type="number"] { font: inherit; font-size: 14px; padding: 7px 9px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--ink); }
+.field input[type="range"] { width: 100%; accent-color: var(--accent); }
+.result { display: grid; gap: 12px; align-content: start; min-width: 0; }
+.verdict { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 12px 14px; border-radius: 8px; background: var(--accent-soft); }
+.verdict .g { font-family: var(--font-display); font-size: 26px; font-weight: 700; }
+.verdict .why { font-size: 13.5px; color: var(--ink-2); }
+
+/* map */
+.maps { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 18px 22px; }
+.mfig { margin: 0; display: grid; gap: 4px; min-width: 0; }
+.mfig figcaption { display: grid; gap: 1px; }
+.mfig figcaption .meta { color: var(--ink-3); font-size: 12.5px; }
+.mfig svg { width: 100%; height: auto; display: block; }
+svg text { font-family: var(--font-body); }
+.legend { display: grid; gap: 12px; }
+.legend .lg { display: grid; grid-template-columns: 14px 1fr; gap: 2px 8px; align-items: center; font-size: 13px; }
+.legend .lg .name { font-weight: 700; }
+.legend .lg .meta { grid-column: 2; color: var(--ink-3); font-size: 12.5px; }
+
+.notes { display: grid; gap: 8px; font-size: 13.5px; color: var(--ink-2); max-width: 80ch; }
+.notes ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+.notes a { color: var(--accent); }
+
+@media (max-width: 760px) {
+  .planner { grid-template-columns: minmax(0, 1fr); }
+  .rowbar { grid-template-columns: 112px 1fr 64px; }
+  th, td { padding: 7px 6px; }
+  #p-table td:first-child { white-space: normal; }
+  .senscharts { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* Wine and gold, styled after the Analytics Night program: white page, wine titles, gold rules.
+   Wine #6a0032 and gold #bb954c are sampled from the event agenda. The five group colors stay as they are. */
+:root {
+  --bg: #ffffff; --surface: #faf7f9; --sunk: #f3ebef; --ink: #1f1a1d; --ink-2: #51474c; --ink-3: #85797f; --line: #ece2e7;
+  --accent: #6a0032; --accent-fill: #6a0032; --accent-soft: #f6efe4; --on-accent: #ffffff;
+  --title: #6a0032; --gold: #bb954c; --gold-soft: #dac59d; --gold-ink: #8b6a2b;
+  --font-display: "Montserrat", "Arial", sans-serif;
+  --font-mono: var(--font-body);
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141113; --surface: #1c181a; --sunk: #262024; --ink: #f2edef; --ink-2: #c6bcc1; --ink-3: #998d93; --line: #352d31;
+    --accent: #e48aab; --accent-fill: #9b2f5a; --accent-soft: #2b2419; --on-accent: #1c0b12;
+    --title: #e9cd96; --gold: #bb954c; --gold-soft: #6b5a3a; --gold-ink: #d8b878;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141113; --surface: #1c181a; --sunk: #262024; --ink: #f2edef; --ink-2: #c6bcc1; --ink-3: #998d93; --line: #352d31;
+  --accent: #e48aab; --accent-fill: #9b2f5a; --accent-soft: #2b2419; --on-accent: #1c0b12;
+  --title: #e9cd96; --gold: #bb954c; --gold-soft: #6b5a3a; --gold-ink: #d8b878;
+}
+body { padding-block: 34px 64px; }
+.wrap { gap: 30px; }
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: 0.01em; }
+h3 { color: var(--title); font-size: 17px; }
+.seg { background: var(--bg); }
+.seg button[aria-pressed="true"], .btn.primary { background: var(--accent-fill); border-color: var(--accent-fill); color: #fff; }
+.btn { background: var(--bg); }
+
+/* header: centered like the event program */
+header.cover { background: none; border: 0; border-radius: 0; padding: 6px 0 28px; border-bottom: 1px solid var(--line);
+  text-align: center; justify-items: center; gap: 12px; }
+header.cover .eyebrow { color: var(--gold-ink); font-size: 12.5px; letter-spacing: 0.18em; }
+header.cover h1 { color: var(--title); text-transform: uppercase; font-weight: 800; font-size: clamp(38px, 6.4vw, 62px); letter-spacing: 0.02em; }
+header.cover h1::after { content: ""; display: block; width: 110px; height: 5px; border-radius: 3px; background: var(--gold); margin: 16px auto 4px; }
+header.cover .lede { margin-inline: auto; }
+header.cover .team { justify-content: center; font-weight: 700; font-size: 21px; gap: 4px 28px; margin-top: 4px; }
+header.cover .school { color: var(--gold-ink); font-weight: 700; letter-spacing: 0.04em; }
+header.cover .chips { justify-content: center; gap: 4px 0; }
+header.cover .chip { background: none; padding: 0; border-radius: 0; color: var(--ink-3); font-size: 13px; }
+header.cover .chip + .chip::before { content: "\00b7"; color: var(--gold); margin: 0 10px; font-weight: 800; }
+
+/* the four numbers as one scoreline between gold dividers */
+.stats { grid-template-columns: repeat(3, minmax(0, 1fr)) minmax(0, 1.3fr); gap: 0; padding-bottom: 26px; border-bottom: 1px solid var(--line); }
+.stat { background: none; border: 0; border-radius: 0; border-left: 2px solid var(--gold-soft); padding: 4px 20px; }
+.stat:first-child { border-left: 0; padding-left: 0; }
+.stat .label { color: var(--gold-ink); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11.5px; font-weight: 700; }
+.stat .value { color: var(--title); font-weight: 800; font-size: 28px; letter-spacing: -0.01em; white-space: nowrap; }
+
+.controls { background: var(--surface); }
+.control > .label { color: var(--gold-ink); text-transform: uppercase; letter-spacing: 0.08em; font-size: 11.5px; font-weight: 700; }
+
+section.panel { padding: 22px 22px 24px; }
+.panel-head h2 { color: var(--title); text-transform: uppercase; font-weight: 800; font-size: 22px; letter-spacing: 0.03em; }
+.panel-head h2::after { content: ""; display: block; width: 44px; height: 4px; border-radius: 2px; background: var(--gold); margin-top: 10px; }
+thead th { color: var(--gold-ink); text-transform: uppercase; letter-spacing: 0.06em; font-size: 11px; font-weight: 700; }
+thead th .gchip { text-transform: none; letter-spacing: 0; font-size: 13px; }
+tfoot td { color: var(--title); }
+.price input { background: var(--bg); font-variant-numeric: tabular-nums; }
+.price input:focus { border-color: var(--accent); }
+.verdict { border-left: 4px solid var(--gold); }
+.verdict .g { font-family: var(--font-display); font-weight: 800; }
+.notes h3 { font-size: 15px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+.summary { border-left: 4px solid var(--gold); }
+.summary h2 { color: var(--title); text-transform: uppercase; font-weight: 800; font-size: 22px; letter-spacing: 0.03em; }
+.summary h2::after { content: ""; display: block; width: 44px; height: 4px; border-radius: 2px; background: var(--gold); margin-top: 10px; }
+.summary li::marker { color: var(--gold-ink); font-weight: 800; }
+
+@media (max-width: 900px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 16px; }
+  .stat:nth-child(3) { border-left: 0; padding-left: 0; }
+}
+@media (max-width: 520px) {
+  .stats { grid-template-columns: minmax(0, 1fr); row-gap: 0; }
+  .stat, .stat:nth-child(3) { border-left: 0; padding: 12px 0; border-top: 1px solid var(--line); }
+  .stat:first-child { border-top: 0; padding-top: 0; }
+  header.cover .team { font-size: 19px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top cover">
+    <p class="eyebrow">Concessions Pricing Challenge · Cavs Sports Business &amp; Analytics Night 2026</p>
+    <h1>Show Planner</h1>
+    <p class="lede">Place any show in one of five crowd groups, forecast what its fans will buy, and test prices before the doors open. Every number updates as you type, starting from the choices our team made.</p>
+    <p class="team"><span>Blessing Masanga</span><span>Daniel Youngquist</span><span>Zeynep Bastas</span></p>
+    <p class="school">Case Western Reserve University</p>
+    <div class="chips">
+      <span class="chip">5 crowd groups</span>
+      <span class="chip">Crowd: Rule 2 base case</span>
+      <span class="chip">Prices: our card</span>
+      <span class="chip">Elasticities: published studies</span>
+    </div>
+  </header>
+
+  <section class="summary" aria-labelledby="h-sum">
+    <h2 id="h-sum">The short version</h2>
+    <ol>
+    <li><strong>Five crowd groups, one simple rule.</strong> A sports event, or a family show where most buyers are men: Family Night &amp; Sports. Other family shows: Family Day. Rock or country concert: Bar. Pop concert: Pop. Everything else: Social.</li>
+    <li><strong>The groups make forecasts more accurate.</strong> Predicting each act from the other shows in its group cuts the error from 34% (no groups) to 22%.</li>
+    <li><strong>Each crowd buys differently.</strong> Bar crowds spend 7 times more on alcohol per fan than Family Day ($13.30 vs $1.80). Pop fans buy the most water, while hip-hop and comedy crowds lean on cocktails.</li>
+    <li><strong>Prices flex by group.</strong> Water $4.99 everywhere and family prices for both family groups. Adult crowds pay a little more for drinks: cocktails $30.25 and Michelob $17.49 at Pop and Social shows, and $30.99 and $17.99 at Bar shows.</li>
+    <li><strong>For the 9 upcoming shows:</strong> $1,055 more than at the old prices (+0.5%) and 4.0% more items sold, at our card and the base crowd. The card stays ahead of the old prices at every price sensitivity we tested, from 0x to 2x.</li>
+    </ol>
+  </section>
+
+  <div class="stats" id="stats" aria-live="polite"></div>
+
+  <div class="controls">
+    <div class="control">
+      <span class="label" id="lbl-scn">Crowd size</span>
+      <div class="seg" role="group" aria-labelledby="lbl-scn" id="scenario">
+        <button type="button" data-v="low">Low</button>
+        <button type="button" data-v="base">Base</button>
+        <button type="button" data-v="high">High</button>
+      </div>
+    </div>
+    <div class="control">
+      <span class="label" id="lbl-sens">Price sensitivity</span>
+      <div class="seg" role="group" aria-labelledby="lbl-sens" id="sens">
+        <button type="button" data-v="0.5">Half</button>
+        <button type="button" data-v="1">As published</button>
+        <button type="button" data-v="1.5">1.5x</button>
+      </div>
+    </div>
+    <div class="control">
+      <span class="label">Download the CSVs</span>
+      <div class="btnrow">
+        <button type="button" class="btn primary" id="dl-forecast">Save upcoming_forecast.csv</button>
+        <button type="button" class="btn" id="dl-groups">Save event_groups.csv</button>
+      </div>
+      <span class="muted">Saves what is on screen. Our submitted files use Our card, Base and As published.</span>
+    </div>
+    <p id="status" role="status"></p>
+  </div>
+
+  <section class="panel" aria-labelledby="h-card">
+    <div class="panel-head">
+      <h2 id="h-card">Price card</h2>
+      <div class="presets">
+        <span class="muted">Start from:</span>
+        <button type="button" class="btn" data-preset="ours">Our card</button>
+        <button type="button" class="btn" data-preset="paid">What each group paid</button>
+        <button type="button" class="btn" data-preset="menu">Current menu everywhere</button>
+      </div>
+    </div>
+    <p class="muted">Type a price in any cell. The small number is the change against what that group paid on average in past shows.</p>
+    <div class="scroll"><table class="board" id="board"></table></div>
+    <div class="pasttest">
+      <h3 id="h-past">Last season at these prices</h3>
+      <p class="muted">What the 36 past shows would have sold at the prices above. This is not a test: it replays our price assumptions on real past sales, so every group can be compared, including Family Night &amp; Sports. The real test of the groups is the backtest in the notebook.</p>
+      <div class="scroll"><table id="pasttable" aria-labelledby="h-past"></table></div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-sens">
+    <div class="panel-head">
+      <h2 id="h-sens">What if fans react more or less to price?</h2>
+      <span class="muted" id="sens-note"></span>
+    </div>
+    <p class="muted">Our data can't measure price sensitivity, because the menu price was the same at every past show. So we borrow it from published studies. These charts run the price card above with sensitivity anywhere from 0x (fans ignore prices) to 2x the published values.</p>
+    <p class="sens-headline" id="sens-headline" aria-live="polite"></p>
+    <div class="senscharts" id="senscharts">
+      <figure class="sfig">
+        <figcaption><strong>Gross sales vs old prices</strong> <span class="muted">9 shows, 5 items</span></figcaption>
+        <svg id="sens-money" role="img" tabindex="0"></svg>
+      </figure>
+      <figure class="sfig">
+        <figcaption><strong>Items sold vs old prices</strong> <span class="muted">9 shows, 5 items</span></figcaption>
+        <svg id="sens-items" role="img" tabindex="0"></svg>
+      </figure>
+      <div class="stip" id="sens-tip" hidden>
+        <div class="t-s muted"></div>
+        <div><span class="v t-g"></span> <span class="muted">gross</span></div>
+        <div><span class="v t-u"></span> <span class="muted">items sold</span></div>
+      </div>
+    </div>
+    <p class="axisnote">Bottom axis: price sensitivity, where 1x = published studies. The dot is the setting picked at the top. Hover or use the arrow keys on a chart to read any point.</p>
+    <details class="sens-table"><summary>Show the numbers</summary><div class="scroll"><table id="sens-table"></table></div></details>
+  </section>
+
+  <section class="panel" aria-labelledby="h-up">
+    <div class="panel-head">
+      <h2 id="h-up">The 9 upcoming shows</h2>
+      <span class="axisnote" id="up-note"></span>
+    </div>
+    <div class="rows" id="bars"></div>
+    <p class="axisnote">Dot: gross for the five items at your prices and the crowd size picked above. Line: low to high crowd.</p>
+    <div class="scroll"><table id="uptable"></table></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-items">
+    <div class="panel-head">
+      <h2 id="h-items">Forecast for every show and item</h2>
+      <span class="muted" id="items-note"></span>
+    </div>
+    <p class="muted">Projected units, recommended price and projected gross sales for each of the five top items at the 9 upcoming shows. With Our card, Base and As published, these are the numbers in upcoming_forecast.csv.</p>
+    <div class="scroll"><table id="itemtable" class="itemtable"></table></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-groups">
+    <div class="panel-head">
+      <h2 id="h-groups">Every show and its group</h2>
+      <span class="muted">36 past shows and the 9 upcoming shows (in bold)</span>
+    </div>
+    <div class="grouplist" id="grouplist"></div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-plan">
+    <div class="panel-head">
+      <h2 id="h-plan">Plan a new show</h2>
+      <span class="muted">Our grouping rule on a show that isn't on the schedule yet</span>
+    </div>
+    <div class="planner">
+      <form class="form" id="planform" autocomplete="off">
+        <div class="field">
+          <label for="p-type">Event type</label>
+          <select id="p-type">
+            <option>Concert</option><option>Comedy</option><option>Family</option><option>Sports</option>
+          </select>
+        </div>
+        <div class="field" id="f-genre">
+          <label for="p-genre">Genre</label>
+          <select id="p-genre"></select>
+        </div>
+        <div class="field">
+          <label for="p-time">Start time</label>
+          <select id="p-time"><option>Evening</option><option>Afternoon</option><option>Morning</option></select>
+        </div>
+        <div class="field" id="f-male" hidden>
+          <label for="p-male">Male share of ticket buyers: <span id="p-male-v" class="num"></span></label>
+          <input type="range" id="p-male" min="0" max="100" step="1" value="45">
+        </div>
+        <div class="field">
+          <label for="p-fans">Expected crowd</label>
+          <input type="number" id="p-fans" min="0" step="100" value="11000" inputmode="numeric">
+        </div>
+      </form>
+      <div class="result">
+        <div class="verdict" id="p-verdict"></div>
+        <div class="scroll"><table id="p-table"></table></div>
+        <p class="muted" id="p-note"></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-map">
+    <div class="panel-head">
+      <h2 id="h-map">Past shows by group</h2>
+      <span class="muted">36 shows, dollars per ticket sold</span>
+    </div>
+    <p class="muted">Each panel lights up one group; the gray dots are all the other past shows, for comparison. Across: alcohol per ticket. Up: food and soft drinks per ticket. Hover a colored dot for the show.</p>
+    <div class="maps" id="maps"></div>
+    <details class="sens-table"><summary>Show the numbers</summary><div class="scroll"><table id="past-table"></table></div></details>
+  </section>
+
+  <section class="notes" aria-labelledby="h-notes">
+    <h3 id="h-notes">How the numbers are built</h3>
+    <ul>
+      <li><strong>Units</strong> = crowd x units per ticket x (new price / price paid before)<sup>elasticity</sup>. <strong>Gross</strong> = units x price.</li>
+      <li><strong>Last season at these prices</strong> takes each past show's real units and sales and re-prices them with the same formula, using what that show actually paid as the old price. It shows what our assumptions imply. It does not check them.</li>
+      <li><strong>The real test</strong> is the backtest in the notebook: hide one act's shows, predict them from the other shows in the same group, and compare with what they actually sold. Error: 34% with no groups, 24% with our first 4 groups, 22% with the 5 groups (pop on its own).</li>
+      <li><strong>Price sensitivity check:</strong> menu prices never changed in the data, so we can't measure sensitivity ourselves. We tried estimating it from the small differences in what fans paid within each group, and it was too noisy to use (95% interval from -1.84 to +3.97). The charts above re-run the forecast from 0x to 2x the published values instead.</li>
+      <li><strong>Units per ticket</strong> come from the performer's own past shows when they played here before (P03, P06, P19, P33), otherwise from their group. E111 and E155 change between daytime and evening, so they get P25's daytime/evening ratios.</li>
+      <li><strong>Crowd:</strong> base = Rule 2. High = the largest of Rules 1 to 3. Low = the smallest, except repeat acts get 75% of their past crowd, never below tickets already sold.</li>
+      <li><strong>Elasticities</strong> are not in our data, so we use published averages: beer -0.46, spirits -0.80 (<a href="https://movendi.ngo/science-digest/effects-of-beverage-alcohol-price-and-tax-levels-on-alcohol-use/" target="_blank" rel="noopener">Wagenaar et al. 2009</a>), soft drinks -0.79 and food away from home -0.81 (<a href="https://scholars.duke.edu/publication/963616" target="_blank" rel="noopener">Andreyeva et al. 2010</a>). The sensitivity switch scales all of them.</li>
+      <li><strong>Groups:</strong> sports event or a family show where at least half the buyers are men = Family Night &amp; Sports; other family shows = Family Day; rock or country concert = Bar; pop concert = Pop; everything else (hip-hop/R&amp;B, comedy) = Social. Pop and Social keep the same prices; they are separate because pop crowds buy a different mix.</li>
+      <li>Concessions data covers most but not all points of sale, so treat totals as a consistent measure, not the arena's full revenue.</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+const DATA = {"items":[{"key":"water","name":"20oz Dasani Water"},{"key":"cocktail","name":"Double Cocktail"},{"key":"fountain","name":"24oz Fountain Drink"},{"key":"pretzel","name":"Bavarian Pretzel"},{"key":"michelob","name":"16oz Michelob Ultra"}],"menu":{"water":5.62,"cocktail":28.79,"fountain":7.79,"pretzel":10.59,"michelob":16.99},"elasticity":{"water":-0.79,"cocktail":-0.8,"fountain":-0.79,"pretzel":-0.81,"michelob":-0.46},"dayVsEvening":{"water":1.2719045571547987,"cocktail":0.3604745734907496,"fountain":0.8805681535180547,"pretzel":1.2336080360961301,"michelob":0.662177776274247},"groups":["Family Day","Family Night & Sports","Pop","Social","Bar"],"groupBasis":{"Family Day":{"water":{"perTicket":0.09603743832341421,"paid":5.19},"cocktail":{"perTicket":0.009791952795157434,"paid":22.67909090909091},"fountain":{"perTicket":0.06956101531105346,"paid":7.183776965265083},"pretzel":{"perTicket":0.06025230174474795,"paid":8.098442380751374},"michelob":{"perTicket":0.010987334045475354,"paid":12.572175925925924}},"Family Night & Sports":{"water":{"perTicket":0.11844169222484957,"paid":5.148837714963432},"cocktail":{"perTicket":0.030412286657457918,"paid":22.910477290223252},"fountain":{"perTicket":0.08311286961814904,"paid":7.0611098591549295},"pretzel":{"perTicket":0.06220588579589352,"paid":7.977090703801279},"michelob":{"perTicket":0.04026877063189193,"paid":12.704825581395346}},"Pop":{"water":{"perTicket":0.16757868321076297,"paid":5.75},"cocktail":{"perTicket":0.049336028719807606,"paid":28.269886965736497},"fountain":{"perTicket":0.05663797009515179,"paid":7.790000000000001},"pretzel":{"perTicket":0.04649541668118922,"paid":10.59},"michelob":{"perTicket":0.027116517374786517,"paid":16.650000000000002}},"Social":{"water":{"perTicket":0.1192084856047776,"paid":5.714979811574697},"cocktail":{"perTicket":0.06927533648275247,"paid":28.23063046834791},"fountain":{"perTicket":0.03429895712630359,"paid":7.729864864864865},"pretzel":{"perTicket":0.029833318477582672,"paid":10.469563788467285},"michelob":{"perTicket":0.03210624832872805,"paid":16.596996113270404}},"Bar":{"water":{"perTicket":0.16260975087443785,"paid":5.7224645679167185},"cocktail":{"perTicket":0.08339536828365439,"paid":28.319694301785276},"fountain":{"perTicket":0.039811141816995195,"paid":7.734062499999999},"pretzel":{"perTicket":0.040280228016683156,"paid":10.432379746835444},"michelob":{"perTicket":0.07629789013185401,"paid":16.6468110130981}}},"groupStats":{"Family Day":{"shows":7,"alc":1.8,"spend":7.7},"Family Night & Sports":{"shows":5,"alc":6.1,"spend":12.9},"Pop":{"shows":5,"alc":8.5,"spend":13.1},"Social":{"shows":10,"alc":9.5,"spend":12.9},"Bar":{"shows":9,"alc":13.3,"spend":17.6}},"defaultCard":{"Family Day":{"water":4.99,"cocktail":22.99,"fountain":6.49,"pretzel":7.49,"michelob":12.99},"Family Night & Sports":{"water":4.99,"cocktail":22.99,"fountain":6.49,"pretzel":7.49,"michelob":12.99},"Pop":{"water":4.99,"cocktail":30.25,"fountain":7.79,"pretzel":10.59,"michelob":17.49},"Social":{"water":4.99,"cocktail":30.25,"fountain":7.79,"pretzel":10.59,"michelob":17.49},"Bar":{"water":4.99,"cocktail":30.99,"fountain":7.79,"pretzel":10.59,"michelob":17.99}},"history":[{"e":"E101","p":"P01","type":"Sports","genre":"Hockey","day":"Thursday","time":"Evening","tickets":6633,"group":"Family Night & Sports","alc":5.29,"oth":6.34,"spend":11.63,"items":{"water":[635,3295.65],"cocktail":[97,2181.53],"fountain":[455,3253.25],"pretzel":[384,3106.56],"michelob":[180,2248.2]}},{"e":"E103","p":"P08","type":"Comedy","genre":"Clean","day":"Friday","time":"Evening","tickets":11838,"group":"Social","alc":10.76,"oth":2.98,"spend":13.73,"items":{"water":[1476,8487.0],"cocktail":[1003,28435.05],"fountain":[307,2391.53],"pretzel":[421,4458.39],"michelob":[457,7609.05]}},{"e":"E104","p":"P14","type":"Concert","genre":"Rock","day":"Tuesday","time":"Evening","tickets":6358,"group":"Bar","alc":17.28,"oth":6.55,"spend":23.83,"items":{"water":[1090,6267.5],"cocktail":[571,16187.85],"fountain":[417,3248.43],"pretzel":[354,3748.86],"michelob":[919,15301.35]}},{"e":"E105","p":"P08","type":"Comedy","genre":"Clean","day":"Saturday","time":"Evening","tickets":17628,"group":"Social","alc":9.59,"oth":2.72,"spend":12.31,"items":{"water":[2365,13598.75],"cocktail":[1327,37620.45],"fountain":[366,2851.14],"pretzel":[505,5347.95],"michelob":[612,10189.8]}},{"e":"E106","p":"P19","type":"Concert","genre":"Rock","day":"Friday","time":"Evening","tickets":10781,"group":"Bar","alc":5.31,"oth":3.47,"spend":8.77,"items":{"water":[1319,7571.93],"cocktail":[447,12672.45],"fountain":[409,3175.23],"pretzel":[362,3818.58],"michelob":[211,3513.15]}},{"e":"E107","p":"P25","type":"Family","genre":"Sports","day":"Saturday","time":"Evening","tickets":5463,"group":"Family Day","alc":1.69,"oth":6.29,"spend":7.98,"items":{"water":[442,2293.98],"cocktail":[58,1304.42],"fountain":[469,3353.35],"pretzel":[317,2564.53],"michelob":[33,412.17]}},{"e":"E108","p":"P12","type":"Family","genre":"Sports","day":"Friday","time":"Evening","tickets":10161,"group":"Family Night & Sports","alc":6.76,"oth":9.1,"spend":15.86,"items":{"water":[1351,7011.69],"cocktail":[390,9278.1],"fountain":[1008,7348.32],"pretzel":[843,6819.87],"michelob":[356,4624.44]}},{"e":"E112","p":"P30","type":"Concert","genre":"Country","day":"Saturday","time":"Evening","tickets":11552,"group":"Bar","alc":19.61,"oth":3.97,"spend":23.58,"items":{"water":[1572,9039.0],"cocktail":[1115,31610.25],"fountain":[458,3567.82],"pretzel":[534,5655.06],"michelob":[1466,24408.9]}},{"e":"E113","p":"P32","type":"Concert","genre":"Hip-Hop / R&B","day":"Saturday","time":"Evening","tickets":4707,"group":"Social","alc":12.42,"oth":4.71,"spend":17.13,"items":{"water":[506,2808.3],"cocktail":[517,14088.25],"fountain":[259,1939.91],"pretzel":[140,1398.6],"michelob":[45,726.75]}},{"e":"E114","p":"P25","type":"Family","genre":"Sports","day":"Saturday","time":"Morning","tickets":4534,"group":"Family Day","alc":0.85,"oth":5.05,"spend":5.9,"items":{"water":[393,2039.67],"cocktail":[21,499.59],"fountain":[299,2179.71],"pretzel":[314,2540.26],"michelob":[21,272.79]}},{"e":"E116","p":"P06","type":"Concert","genre":"Pop","day":"Tuesday","time":"Evening","tickets":12593,"group":"Pop","alc":10.83,"oth":4.38,"spend":15.21,"items":{"water":[2060,11845.0],"cocktail":[696,19731.6],"fountain":[665,5180.35],"pretzel":[487,5157.33],"michelob":[388,6460.2]}},{"e":"E117","p":"P13","type":"Concert","genre":"Hip-Hop / R&B","day":"Friday","time":"Evening","tickets":10848,"group":"Social","alc":7.37,"oth":2.93,"spend":10.3,"items":{"water":[1523,8734.85],"cocktail":[446,12644.1],"fountain":[412,3191.56],"pretzel":[307,3223.63],"michelob":[353,5877.45]}},{"e":"E118","p":"P25","type":"Family","genre":"Sports","day":"Saturday","time":"Evening","tickets":4454,"group":"Family Day","alc":1.73,"oth":5.52,"spend":7.25,"items":{"water":[270,1401.3],"cocktail":[35,832.65],"fountain":[338,2464.02],"pretzel":[239,1933.51],"michelob":[50,649.5]}},{"e":"E120","p":"P24","type":"Concert","genre":"Pop","day":"Monday","time":"Evening","tickets":9039,"group":"Pop","alc":10.75,"oth":4.25,"spend":15.0,"items":{"water":[1322,7601.5],"cocktail":[609,17265.15],"fountain":[521,4058.59],"pretzel":[372,3939.48],"michelob":[397,6610.05]}},{"e":"E122","p":"P15","type":"Concert","genre":"Rock","day":"Friday","time":"Evening","tickets":18286,"group":"Bar","alc":12.75,"oth":2.71,"spend":15.45,"items":{"water":[2771,15922.61],"cocktail":[1509,42780.15],"fountain":[531,4126.25],"pretzel":[513,5407.67],"michelob":[1220,20313.0]}},{"e":"E124","p":"P03","type":"Family","genre":"Sports","day":"Sunday","time":"Afternoon","tickets":5658,"group":"Family Day","alc":1.64,"oth":6.79,"spend":8.43,"items":{"water":[811,4209.09],"cocktail":[43,967.07],"fountain":[422,3017.3],"pretzel":[381,3082.29],"michelob":[29,362.21]}},{"e":"E125","p":"P11","type":"Sports","genre":"Combat","day":"Saturday","time":"Evening","tickets":7158,"group":"Family Night & Sports","alc":9.19,"oth":4.85,"spend":14.04,"items":{"water":[965,5008.91],"cocktail":[264,6280.56],"fountain":[393,2864.97],"pretzel":[345,2791.05],"michelob":[629,8174.71]}},{"e":"E126","p":"P10","type":"Concert","genre":"Rock","day":"Thursday","time":"Evening","tickets":8784,"group":"Bar","alc":6.97,"oth":3.9,"spend":10.87,"items":{"water":[1277,7087.35],"cocktail":[329,8965.25],"fountain":[361,2703.89],"pretzel":[346,3456.54],"michelob":[313,5054.95]}},{"e":"E127","p":"P16","type":"Concert","genre":"Pop","day":"Saturday","time":"Evening","tickets":14710,"group":"Pop","alc":6.04,"oth":4.95,"spend":11.0,"items":{"water":[2407,13840.25],"cocktail":[443,12559.05],"fountain":[824,6418.96],"pretzel":[661,6999.99],"michelob":[307,5111.55]}},{"e":"E130","p":"P33","type":"Family","genre":"Sports","day":"Saturday","time":"Evening","tickets":8833,"group":"Family Day","alc":2.66,"oth":4.66,"spend":7.32,"items":{"water":[762,3954.78],"cocktail":[118,2653.82],"fountain":[455,3253.25],"pretzel":[449,3632.41],"michelob":[165,2060.85]}},{"e":"E131","p":"P12","type":"Family","genre":"Sports","day":"Friday","time":"Evening","tickets":9419,"group":"Family Night & Sports","alc":4.63,"oth":7.12,"spend":11.76,"items":{"water":[1044,5209.56],"cocktail":[304,6532.96],"fountain":[731,4714.95],"pretzel":[500,3745.0],"michelob":[254,3045.46]}},{"e":"E132","p":"P02","type":"Concert","genre":"Rock","day":"Thursday","time":"Evening","tickets":12657,"group":"Bar","alc":12.73,"oth":4.31,"spend":17.03,"items":{"water":[2291,13173.25],"cocktail":[1367,38754.45],"fountain":[392,3053.68],"pretzel":[446,4723.14],"michelob":[789,13136.85]}},{"e":"E134","p":"P07","type":"Concert","genre":"Hip-Hop / R&B","day":"Saturday","time":"Evening","tickets":12497,"group":"Social","alc":9.19,"oth":2.87,"spend":12.05,"items":{"water":[1615,9286.25],"cocktail":[719,20700.01],"fountain":[477,3715.83],"pretzel":[345,3653.55],"michelob":[223,3788.77]}},{"e":"E135","p":"P09","type":"Concert","genre":"Rock","day":"Saturday","time":"Evening","tickets":9133,"group":"Bar","alc":14.3,"oth":4.16,"spend":18.46,"items":{"water":[1761,9965.03],"cocktail":[948,26401.14],"fountain":[412,3120.52],"pretzel":[435,4231.65],"michelob":[907,14856.11]}},{"e":"E136","p":"P04","type":"Concert","genre":"Pop","day":"Friday","time":"Evening","tickets":14950,"group":"Pop","alc":8.48,"oth":4.99,"spend":13.47,"items":{"water":[2703,15542.25],"cocktail":[907,25486.65],"fountain":[822,6403.38],"pretzel":[848,8980.32],"michelob":[378,6293.7]}},{"e":"E138","p":"P25","type":"Family","genre":"Sports","day":"Saturday","time":"Afternoon","tickets":6637,"group":"Family Day","alc":1.43,"oth":6.45,"spend":7.88,"items":{"water":[748,3882.12],"cocktail":[32,719.68],"fountain":[478,3417.7],"pretzel":[458,3705.22],"michelob":[70,874.3]}},{"e":"E140","p":"P31","type":"Concert","genre":"Rock","day":"Thursday","time":"Evening","tickets":6677,"group":"Bar","alc":15.61,"oth":5.15,"spend":20.76,"items":{"water":[1091,6273.25],"cocktail":[554,15705.9],"fountain":[454,3536.66],"pretzel":[352,3727.68],"michelob":[545,9074.25]}},{"e":"E141","p":"P22","type":"Concert","genre":"Hip-Hop / R&B","day":"Saturday","time":"Evening","tickets":16048,"group":"Social","alc":10.89,"oth":3.36,"spend":14.25,"items":{"water":[2062,11856.5],"cocktail":[1157,33310.03],"fountain":[617,4806.43],"pretzel":[446,4723.14],"michelob":[489,8306.75]}},{"e":"E143","p":"P21","type":"Concert","genre":"Rock","day":"Thursday","time":"Evening","tickets":13835,"group":"Bar","alc":15.3,"oth":4.03,"spend":19.34,"items":{"water":[2774,15950.5],"cocktail":[1338,38521.02],"fountain":[470,3661.3],"pretzel":[608,6438.72],"michelob":[1112,18892.88]}},{"e":"E144","p":"P28","type":"Comedy","genre":"Moderate","day":"Sunday","time":"Evening","tickets":14033,"group":"Social","alc":9.53,"oth":4.68,"spend":14.21,"items":{"water":[1623,9007.09],"cocktail":[901,24552.25],"fountain":[427,3198.23],"pretzel":[436,4355.64],"michelob":[785,12677.75]}},{"e":"E145","p":"P18","type":"Concert","genre":"Pop","day":"Tuesday","time":"Evening","tickets":6090,"group":"Pop","alc":6.17,"oth":4.75,"spend":10.92,"items":{"water":[1124,6463.0],"cocktail":[176,4989.6],"fountain":[418,3256.22],"pretzel":[300,3177.0],"michelob":[86,1431.9]}},{"e":"E147","p":"P20","type":"Concert","genre":"Hip-Hop / R&B","day":"Wednesday","time":"Evening","tickets":7221,"group":"Social","alc":10.49,"oth":2.65,"spend":13.15,"items":{"water":[576,3292.4],"cocktail":[581,16277.97],"fountain":[217,1682.75],"pretzel":[148,1537.32],"michelob":[230,3812.86]}},{"e":"E148","p":"P27","type":"Concert","genre":"Hip-Hop / R&B","day":"Sunday","time":"Evening","tickets":7399,"group":"Social","alc":5.52,"oth":3.45,"spend":8.97,"items":{"water":[605,3478.75],"cocktail":[493,13976.55],"fountain":[394,3069.26],"pretzel":[176,1863.84],"michelob":[40,666.0]}},{"e":"E150","p":"P25","type":"Family","genre":"Sports","day":"Friday","time":"Evening","tickets":3739,"group":"Family Day","alc":2.37,"oth":7.03,"spend":9.4,"items":{"water":[350,1816.5],"cocktail":[78,1754.22],"fountain":[274,1962.3],"pretzel":[211,1726.99],"michelob":[64,799.36]}},{"e":"E151","p":"P12","type":"Family","genre":"Sports","day":"Monday","time":"Evening","tickets":9342,"group":"Family Night & Sports","alc":4.53,"oth":6.92,"spend":11.45,"items":{"water":[1064,5522.16],"cocktail":[244,5487.56],"fountain":[963,6885.45],"pretzel":[585,4732.65],"michelob":[301,3759.49]}},{"e":"E154","p":"P17","type":"Comedy","genre":"Moderate","day":"Monday","time":"Evening","tickets":9971,"group":"Social","alc":9.38,"oth":3.78,"spend":13.16,"items":{"water":[1023,5882.25],"cocktail":[628,17803.8],"fountain":[372,2897.88],"pretzel":[423,4479.57],"michelob":[368,6127.2]}}],"upcoming":[{"e":"E109","p":"P33","type":"Family","genre":"Sports","day":"Friday","time":"Evening","toDate":518,"group":"Family Day","basis":"own","note":"","lastVisit":"E130, 8,833 fans","att":{"low":6651,"base":8830,"high":8830},"items":{"water":{"perTicket":0.08626740631721952,"paid":5.19},"cocktail":{"perTicket":0.013358994679044492,"paid":22.490000000000002},"fountain":{"perTicket":0.05151137778784105,"paid":7.15},"pretzel":{"perTicket":0.05083210687195743,"paid":8.09},"michelob":{"perTicket":0.0186799501867995,"paid":12.49}}},{"e":"E110","p":"P26","type":"Concert","genre":"Rock","day":"Thursday","time":"Evening","toDate":8081,"group":"Bar","basis":"group","note":"","lastVisit":"First visit","att":{"low":8890,"base":10100,"high":10100},"items":{"water":{"perTicket":0.16260975087443785,"paid":5.7224645679167185},"cocktail":{"perTicket":0.08339536828365439,"paid":28.319694301785276},"fountain":{"perTicket":0.039811141816995195,"paid":7.734062499999999},"pretzel":{"perTicket":0.040280228016683156,"paid":10.432379746835444},"michelob":{"perTicket":0.07629789013185401,"paid":16.6468110130981}}},{"e":"E111","p":"P03","type":"Family","genre":"Sports","day":"Wednesday","time":"Evening","toDate":506,"group":"Family Day","basis":"own","note":"evening adjustment from P25","lastVisit":"E124, 5,658 fans","att":{"low":3240,"base":4300,"high":4300},"items":{"water":{"perTicket":0.11269467299647801,"paid":5.19},"cocktail":{"perTicket":0.021082925582480094,"paid":22.490000000000002},"fountain":{"perTicket":0.08470060902394184,"paid":7.15},"pretzel":{"perTicket":0.05458644894335429,"paid":8.09},"michelob":{"perTicket":0.007740347412907291,"paid":12.489999999999998}}},{"e":"E115","p":"P23","type":"Concert","genre":"Pop","day":"Friday","time":"Evening","toDate":8006,"group":"Pop","basis":"group","note":"","lastVisit":"First visit","att":{"low":10010,"base":10010,"high":12590},"items":{"water":{"perTicket":0.16757868321076297,"paid":5.75},"cocktail":{"perTicket":0.049336028719807606,"paid":28.269886965736497},"fountain":{"perTicket":0.05663797009515179,"paid":7.790000000000001},"pretzel":{"perTicket":0.04649541668118922,"paid":10.59},"michelob":{"perTicket":0.027116517374786517,"paid":16.650000000000002}}},{"e":"E121","p":"P34","type":"Concert","genre":"Hip-Hop / R&B","day":"Sunday","time":"Evening","toDate":4161,"group":"Social","basis":"group","note":"","lastVisit":"First visit","att":{"low":5200,"base":5200,"high":9120},"items":{"water":{"perTicket":0.1192084856047776,"paid":5.714979811574697},"cocktail":{"perTicket":0.06927533648275247,"paid":28.23063046834791},"fountain":{"perTicket":0.03429895712630359,"paid":7.729864864864865},"pretzel":{"perTicket":0.029833318477582672,"paid":10.469563788467285},"michelob":{"perTicket":0.03210624832872805,"paid":16.596996113270404}}},{"e":"E129","p":"P06","type":"Concert","genre":"Pop","day":"Monday","time":"Evening","toDate":7511,"group":"Pop","basis":"own","note":"","lastVisit":"E116, 12,593 fans","att":{"low":9483,"base":12590,"high":12590},"items":{"water":{"perTicket":0.16358294290478836,"paid":5.75},"cocktail":{"perTicket":0.055268800127054714,"paid":28.349999999999998},"fountain":{"perTicket":0.0528071150639244,"paid":7.790000000000001},"pretzel":{"perTicket":0.03867227824982133,"paid":10.59},"michelob":{"perTicket":0.030810767886921307,"paid":16.65}}},{"e":"E133","p":"P29","type":"Concert","genre":"Rock","day":"Wednesday","time":"Evening","toDate":2140,"group":"Bar","basis":"group","note":"","lastVisit":"First visit","att":{"low":2680,"base":2680,"high":7570},"items":{"water":{"perTicket":0.16260975087443785,"paid":5.7224645679167185},"cocktail":{"perTicket":0.08339536828365439,"paid":28.319694301785276},"fountain":{"perTicket":0.039811141816995195,"paid":7.734062499999999},"pretzel":{"perTicket":0.040280228016683156,"paid":10.432379746835444},"michelob":{"perTicket":0.07629789013185401,"paid":16.6468110130981}}},{"e":"E142","p":"P19","type":"Concert","genre":"Rock","day":"Tuesday","time":"Evening","toDate":4085,"group":"Bar","basis":"own","note":"","lastVisit":"E106, 10,781 fans","att":{"low":4085,"base":4490,"high":5110},"items":{"water":{"perTicket":0.1223448659679065,"paid":5.740659590598939},"cocktail":{"perTicket":0.04146183099897969,"paid":28.35},"fountain":{"perTicket":0.03793711158519618,"paid":7.763398533007335},"pretzel":{"perTicket":0.03357759020499026,"paid":10.548563535911603},"michelob":{"perTicket":0.019571468323903163,"paid":16.650000000000002}}},{"e":"E155","p":"P19","type":"Concert","genre":"Rock","day":"Tuesday","time":"Afternoon","toDate":4124,"group":"Bar","basis":"own","note":"matinee adjustment from P25","lastVisit":"E106, 10,781 fans","att":{"low":4124,"base":4540,"high":5160},"items":{"water":{"perTicket":0.15561099256907332,"paid":5.740659590598939},"cocktail":{"perTicket":0.014945935845502743,"paid":28.35},"fountain":{"perTicket":0.0334062122983846,"paid":7.763398533007335},"pretzel":{"perTicket":0.041421585109618686,"paid":10.548563535911603},"michelob":{"perTicket":0.01295979137314406,"paid":16.650000000000002}}}],"historicalGroups":[{"e":"E101","group":"Family Night & Sports"},{"e":"E103","group":"Social"},{"e":"E104","group":"Bar"},{"e":"E105","group":"Social"},{"e":"E106","group":"Bar"},{"e":"E107","group":"Family Day"},{"e":"E108","group":"Family Night & Sports"},{"e":"E112","group":"Bar"},{"e":"E113","group":"Social"},{"e":"E114","group":"Family Day"},{"e":"E116","group":"Pop"},{"e":"E117","group":"Social"},{"e":"E118","group":"Family Day"},{"e":"E120","group":"Pop"},{"e":"E122","group":"Bar"},{"e":"E124","group":"Family Day"},{"e":"E125","group":"Family Night & Sports"},{"e":"E126","group":"Bar"},{"e":"E127","group":"Pop"},{"e":"E130","group":"Family Day"},{"e":"E131","group":"Family Night & Sports"},{"e":"E132","group":"Bar"},{"e":"E134","group":"Social"},{"e":"E135","group":"Bar"},{"e":"E136","group":"Pop"},{"e":"E138","group":"Family Day"},{"e":"E140","group":"Bar"},{"e":"E141","group":"Social"},{"e":"E143","group":"Bar"},{"e":"E144","group":"Social"},{"e":"E145","group":"Pop"},{"e":"E147","group":"Social"},{"e":"E148","group":"Social"},{"e":"E150","group":"Family Day"},{"e":"E151","group":"Family Night & Sports"},{"e":"E154","group":"Social"}]};
+const ITEMS = DATA.items;
+const GROUPS = DATA.groups;
+const GROUP_VAR = {"Family Day": "--g-day", "Family Night & Sports": "--g-night", "Pop": "--g-pop", "Social": "--g-social", "Bar": "--g-bar"};
+const SHORT = {water: "Water", cocktail: "Cocktail", fountain: "Fountain", pretzel: "Pretzel", michelob: "Michelob"};
+const SIZE = {water: "20oz", cocktail: "", fountain: "24oz", pretzel: "", michelob: "16oz"};
+const LABEL = {water: "Dasani Water", cocktail: "Double Cocktail", fountain: "Fountain Drink", pretzel: "Bavarian Pretzel", michelob: "Michelob Ultra"};
+
+const clone = (o) => JSON.parse(JSON.stringify(o));
+const money0 = (v) => "$" + Math.round(v).toLocaleString("en-US");
+const moneyK = (v) => "$" + (v / 1000).toFixed(1) + "K";
+const money2 = (v) => "$" + v.toFixed(2);
+const int = (v) => Math.round(v).toLocaleString("en-US");
+const pct = (v) => (Math.abs(v) < 0.0005 ? "0.0%" : (v > 0 ? "+" : "") + (v * 100).toFixed(1) + "%");
+const deltaClass = (v) => (Math.abs(v) < 0.0005 ? "delta-flat" : v > 0 ? "delta-up" : "delta-down");
+const kind = (s) => s.type === "Concert" ? s.genre
+  : s.type === "Comedy" ? `Comedy (${s.genre.toLowerCase()})`
+  : s.type === "Sports" ? (s.genre === "Combat" ? "Combat sports" : s.genre)
+  : "Family show";
+
+/* ---------- model (pure functions) ---------- */
+function priceEffect(item, price, paid, sens) {
+  return Math.pow(price / paid, DATA.elasticity[item] * sens);
+}
+function forecastShow(show, card, scenario, sens) {
+  const crowd = show.att[scenario];
+  const out = { crowd, units: {}, gross: 0, grossOld: 0, unitsTotal: 0, unitsOld: 0, rows: [] };
+  for (const it of ITEMS) {
+    const b = show.items[it.key];
+    const price = card[show.group][it.key];
+    const units = Math.round(crowd * b.perTicket * priceEffect(it.key, price, b.paid, sens));
+    const unitsOld = Math.round(crowd * b.perTicket);
+    const gross = (units * Math.round(price * 100)) / 100;   // whole cents, same as the notebook's round(units * price, 2)
+    out.units[it.key] = units;
+    out.gross += gross;
+    out.grossOld += Math.round(unitsOld * b.paid * 100) / 100;
+    out.unitsTotal += units;
+    out.unitsOld += unitsOld;
+    out.rows.push({ event_id: show.e, item_name: it.name, units, price, gross });
+  }
+  return out;
+}
+function pastTest(card, sens) {
+  // Each past show's real units and sales, re-priced: units x (new price / what that show paid) ^ elasticity.
+  const out = Object.fromEntries(GROUPS.map((g) => [g, { shows: 0, u0: 0, u1: 0, g0: 0, g1: 0 }]));
+  for (const h of DATA.history) {
+    const o = out[h.group];
+    o.shows++;
+    for (const it of ITEMS) {
+      const [u, gross] = h.items[it.key];
+      if (u <= 0) continue;
+      const price = card[h.group][it.key];
+      const nu = u * priceEffect(it.key, price, gross / u, sens);
+      o.u0 += u; o.g0 += gross; o.u1 += nu; o.g1 += nu * price;
+    }
+  }
+  return out;
+}
+function forecastAll(card, scenario, sens) {
+  return DATA.upcoming.map((s) => ({ show: s, f: forecastShow(s, card, scenario, sens) }));
+}
+function placeShow(type, genre, maleShare) {
+  if (type === "Sports") return { group: "Family Night & Sports", why: "A sports event goes to Family Night & Sports." };
+  if (type === "Family") {
+    return maleShare >= 50
+      ? { group: "Family Night & Sports", why: "A family show whose buyers are mostly male goes to Family Night & Sports." }
+      : { group: "Family Day", why: "A family show with mostly female or mixed buyers goes to Family Day." };
+  }
+  if (type === "Concert" && (genre === "Rock" || genre === "Country")) return { group: "Bar", why: "A rock or country concert goes to Bar." };
+  if (type === "Concert" && genre === "Pop") return { group: "Pop", why: "A pop concert goes to Pop." };
+  return { group: "Social", why: "Hip-hop/R&B, comedy and other adult shows go to Social." };
+}
+function planShow(type, genre, time, maleShare, fans, card, sens) {
+  const placed = placeShow(type, genre, maleShare);
+  const daytimeAdult = time !== "Evening" && type !== "Family";
+  const rows = ITEMS.map((it) => {
+    const b = DATA.groupBasis[placed.group][it.key];
+    const perTicket = b.perTicket * (daytimeAdult ? DATA.dayVsEvening[it.key] : 1);
+    const price = card[placed.group][it.key];
+    const units = Math.round(fans * perTicket * priceEffect(it.key, price, b.paid, sens));
+    return { key: it.key, units, price, gross: units * price };
+  });
+  return { ...placed, daytimeAdult, rows, gross: rows.reduce((a, r) => a + r.gross, 0) };
+}
+function toCSV(rows, cols) {
+  const esc = (v) => (/[",\n]/.test(String(v)) ? '"' + String(v).replace(/"/g, '""') + '"' : String(v));
+  return [cols.join(",")].concat(rows.map((r) => cols.map((c) => esc(r[c])).join(","))).join("\n") + "\n";
+}
+
+/* ---------- state ---------- */
+const PRESETS = {
+  ours: () => clone(DATA.defaultCard),
+  paid: () => Object.fromEntries(GROUPS.map((g) => [g, Object.fromEntries(ITEMS.map((it) => [it.key, Math.round(DATA.groupBasis[g][it.key].paid * 100) / 100]))])),
+  menu: () => Object.fromEntries(GROUPS.map((g) => [g, clone(DATA.menu)])),
+};
+const state = { scenario: "base", sens: 1, card: PRESETS.ours() };
+function loadSaved() {
+  try {
+    const raw = localStorage.getItem("show-planner-v2");
+    if (!raw) return;
+    const s = JSON.parse(raw);
+    if (["low", "base", "high"].includes(s.scenario)) state.scenario = s.scenario;
+    if ([0.5, 1, 1.5].includes(s.sens)) state.sens = s.sens;
+    if (s.card && GROUPS.every((g) => s.card[g] && ITEMS.every((it) => typeof s.card[g][it.key] === "number" && s.card[g][it.key] > 0))) state.card = s.card;
+  } catch (e) { /* storage unavailable: keep defaults */ }
+}
+function save() {
+  try { localStorage.setItem("show-planner-v2", JSON.stringify(state)); } catch (e) { /* ignore */ }
+}
+
+/* ---------- rendering ---------- */
+const $ = (id) => document.getElementById(id);
+const gvar = (g) => `var(${GROUP_VAR[g]})`;
+const gchip = (g) => `<span class="gchip"><span class="dot" style="background:${gvar(g)}"></span>${g}</span>`;
+
+function renderBoard() {
+  const head = `<thead><tr><th>Item</th>${GROUPS.map((g) => `<th>${gchip(g)}</th>`).join("")}<th>Current menu</th></tr></thead>`;
+  const body = ITEMS.map((it) => {
+    const cells = GROUPS.map((g) => {
+      const id = `price-${g.replace(/[^A-Za-z]/g, "")}-${it.key}`;
+      return `<td><span class="price"><input id="${id}" type="number" min="0.5" step="0.10" inputmode="decimal" data-g="${g}" data-i="${it.key}" aria-label="${LABEL[it.key]} price for ${g}" value="${state.card[g][it.key].toFixed(2)}"><small id="${id}-d"></small></span></td>`;
+    }).join("");
+    return `<tr><td class="item">${SIZE[it.key] ? `<span class="size">${SIZE[it.key]} </span>` : ""}${LABEL[it.key]}</td>${cells}<td class="menu-col">${money2(DATA.menu[it.key])}</td></tr>`;
+  }).join("");
+  $("board").innerHTML = head + `<tbody>${body}</tbody>`;
+  $("board").querySelectorAll("input").forEach((inp) => {
+    inp.addEventListener("input", () => {
+      const v = parseFloat(inp.value);
+      if (Number.isFinite(v) && v > 0) {
+        state.card[inp.dataset.g][inp.dataset.i] = v;
+        save();
+        updateAll(false);
+      }
+    });
+  });
+  updateBoardDeltas();
+}
+function updateBoardDeltas() {
+  for (const g of GROUPS) for (const it of ITEMS) {
+    const id = `price-${g.replace(/[^A-Za-z]/g, "")}-${it.key}`;
+    const d = state.card[g][it.key] / DATA.groupBasis[g][it.key].paid - 1;
+    const el = $(id + "-d");
+    if (el) { el.textContent = pct(d) + " vs paid"; el.className = "delta-price"; }
+  }
+}
+function renderPast() {
+  const r = pastTest(state.card, state.sens);
+  const tot = { shows: 0, u0: 0, u1: 0, g0: 0, g1: 0 };
+  for (const g of GROUPS) for (const k in tot) tot[k] += r[g][k];
+  const row = (label, o, strong) => {
+    const du = o.u1 / o.u0 - 1, dg = o.g1 - o.g0;
+    const tag = strong ? "strong" : "span";
+    return `<tr><td>${label}</td><td>${o.shows}</td><td>${int(o.u0)}</td><td class="${deltaClass(du)}">${pct(du)}</td><td>${money0(o.g0)}</td><td>${money0(o.g1)}</td><td class="${deltaClass(dg / o.g0)}"><${tag}>${dg >= 0 ? "+" : "-"}${money0(Math.abs(dg))} (${pct(dg / o.g0)})</${tag}></td></tr>`;
+  };
+  $("pasttable").innerHTML = `<thead><tr><th>Group</th><th>Past shows</th><th>Items sold</th><th>Items, new prices</th><th>Gross, real</th><th>Gross, new prices</th><th>Change</th></tr></thead>`
+    + `<tbody>${GROUPS.map((g) => row(gchip(g), r[g], false)).join("")}</tbody>`
+    + `<tfoot>${row("All 36 shows", tot, true)}</tfoot>`;
+}
+/* ---------- price sensitivity check ---------- */
+const SENS_STEPS = Array.from({ length: 41 }, (_, i) => i / 20);   // 0x to 2x in steps of 0.05
+let sensCurveCache = [];
+const sensGeom = {};
+const nearS = (a, b) => Math.abs(a - b) < 1e-9;
+const signedMoney = (v) => (Math.abs(v) < 0.5 ? "$0" : `${v > 0 ? "+" : "-"}$${int(Math.abs(v))}`);
+const pct2 = (v) => `${v > 0 ? "+" : v < 0 ? "-" : ""}${Math.abs(v * 100).toFixed(2)}%`;
+const sLabel = (s) => (nearS(s, 1) ? "1x (published studies)" : nearS(s, 0) ? "0x (fans ignore prices)" : `${s}x the published sensitivity`);
+
+function sensCurve(card, scenario) {
+  return SENS_STEPS.map((s) => {
+    let g = 0, g0 = 0, u = 0, u0 = 0;
+    for (const x of forecastAll(card, scenario, s)) { g += x.f.gross; g0 += x.f.grossOld; u += x.f.unitsTotal; u0 += x.f.unitsOld; }
+    return { s, dg: g - g0, rg: g / g0 - 1, du: u / u0 - 1 };
+  });
+}
+function breakEven(curve, card, scenario) {
+  // Find the first sign change on the 0.05 grid, then narrow it down by bisection.
+  const dgAt = (s) => forecastAll(card, scenario, s).reduce((t, x) => t + x.f.gross - x.f.grossOld, 0);
+  for (let i = 1; i < curve.length; i++) {
+    const a = curve[i - 1], b = curve[i];
+    if (a.dg === 0) return a.s;
+    if ((a.dg < 0) !== (b.dg < 0)) {
+      let lo = a.s, hi = b.s;
+      const neg = a.dg < 0;
+      for (let k = 0; k < 24; k++) {
+        const mid = (lo + hi) / 2;
+        if ((dgAt(mid) < 0) === neg) lo = mid; else hi = mid;
+      }
+      return (lo + hi) / 2;
+    }
+  }
+  return null;
+}
+function niceStep(span, target) {
+  const raw = span / target, p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+  return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * p;
+}
+function drawSensChart(id, curve, key, o) {
+  // One series per chart (money and items have different scales, so two charts instead of two y-axes).
+  const svg = $(id);
+  const W = Math.max(260, Math.min(900, Math.round(svg.parentElement.clientWidth || 420)));
+  const narrow = W < 420;
+  const H = narrow ? 190 : 210, L = 64, R = 16, T = 20, B = 30;
+  const vals = curve.map((c) => c[key]);
+  let lo = Math.min(0, ...vals), hi = Math.max(0, ...vals);
+  if (hi - lo < o.minSpan) hi = lo + o.minSpan;
+  const step = niceStep(hi - lo, narrow ? 3 : 4);
+  lo = Math.floor(lo / step + 1e-9) * step;
+  hi = Math.ceil(hi / step - 1e-9) * step;
+  if (hi <= lo) hi = lo + step;
+  const X = (s) => L + (s / 2) * (W - L - R);
+  const Y = (v) => T + ((hi - v) / (hi - lo)) * (H - T - B);
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  let out = "";
+  for (let k = 0; lo + k * step <= hi + step / 2; k++) {
+    const v = Math.abs(lo + k * step) < step / 1e6 ? 0 : lo + k * step;
+    const y = Y(v).toFixed(1);
+    out += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="${v === 0 ? "var(--ink-3)" : "var(--line)"}" stroke-width="1"/>`;
+    out += `<text x="${L - 8}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" font-size="12" fill="var(--ink-3)" style="font-variant-numeric:tabular-nums">${o.fmtTick(v)}</text>`;
+  }
+  for (const s of narrow ? [0, 1, 2] : [0, 0.5, 1, 1.5, 2]) {
+    out += `<text x="${X(s).toFixed(1)}" y="${H - B + 19}" text-anchor="middle" font-size="12" fill="var(--ink-3)">${s === 1 && !narrow ? "1x published" : s + "x"}</text>`;
+  }
+  const d = curve.map((c, i) => `${i ? "L" : "M"}${X(c.s).toFixed(1)},${Y(c[key]).toFixed(1)}`).join("");
+  out += `<path d="${d}" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+  if (o.be != null) {
+    const bx = X(o.be), by = Y(0), right = bx < W - R - 120;
+    out += `<circle cx="${bx.toFixed(1)}" cy="${by.toFixed(1)}" r="4.5" fill="var(--ink-2)" stroke="var(--surface)" stroke-width="2"/>`;
+    out += `<text x="${(bx + (right ? 9 : -9)).toFixed(1)}" y="${(by + 17).toFixed(1)}" text-anchor="${right ? "start" : "end"}" font-size="12" fill="var(--ink-2)">break-even ${o.be.toFixed(2)}x</text>`;
+  }
+  const i = curve.findIndex((c) => nearS(c.s, state.sens));
+  if (i >= 0) {
+    const c = curve[i], cx = X(c.s), cy = Y(c[key]);
+    const rising = curve[Math.min(curve.length - 1, i + 1)][key] >= curve[Math.max(0, i - 1)][key];
+    const above = cy - T > 18;
+    const lx = rising ? cx - 9 : cx + 9, ly = above ? cy - 9 : cy + 20;
+    out += `<circle cx="${cx.toFixed(1)}" cy="${cy.toFixed(1)}" r="5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>`;
+    out += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="${rising ? "end" : "start"}" font-size="12.5" font-weight="700" fill="var(--ink)" style="font-variant-numeric:tabular-nums">${o.fmtPoint(c)}</text>`;
+  }
+  out += `<g class="xh" visibility="hidden"><line y1="${T}" y2="${H - B}" stroke="var(--ink-3)" stroke-width="1"/><circle r="5" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/></g>`;
+  svg.innerHTML = out;
+  sensGeom[id] = { X, Y, W, L, R, key };
+}
+function renderSens() {
+  const curve = sensCurve(state.card, state.scenario);
+  sensCurveCache = curve;
+  const be = breakEven(curve, state.card, state.scenario);
+  const at = (s) => curve.find((c) => nearS(c.s, s));
+  const m0 = at(0), m1 = at(1), m2 = at(2);
+  const lead = be == null
+    ? (m0.dg >= 0 ? "This card makes at least as much as the old prices at every sensitivity from 0x to 2x."
+                  : "This card brings in less than the old prices at every sensitivity from 0x to 2x.")
+    : (m0.dg < 0 ? `This card breaks even at ${be.toFixed(2)}x the published sensitivity and makes more above that.`
+                 : `This card makes more than the old prices up to ${be.toFixed(2)}x the published sensitivity, and less above that.`);
+  $("sens-headline").innerHTML = `${lead} If fans ignore prices completely: <strong>${signedMoney(m0.dg)}</strong> (${pct2(m0.rg)}). `
+    + `At the published values: <strong>${signedMoney(m1.dg)}</strong> (${pct2(m1.rg)}), and items sold go ${m1.du >= 0 ? "up" : "down"} ${Math.abs(m1.du * 100).toFixed(1)}%.`;
+  $("sens-note").textContent = `${{ low: "Low", base: "Base", high: "High" }[state.scenario]} crowd, prices on the card above`;
+  const moneyTick = (v) => (v === 0 ? "$0" : `${v > 0 ? "+" : "-"}$${Math.abs(v) >= 10000 ? Math.round(Math.abs(v) / 1000) + "K" : int(Math.abs(v))}`);
+  drawSensChart("sens-money", curve, "dg", { fmtTick: moneyTick, fmtPoint: (c) => signedMoney(c.dg), minSpan: 100, be });
+  drawSensChart("sens-items", curve, "du", { fmtTick: (v) => `${Math.round(v * 1000) / 10}%`, fmtPoint: (c) => pct(c.du), minSpan: 0.01, be: null });
+  $("sens-money").setAttribute("aria-label", `Gross sales vs old prices: ${signedMoney(m0.dg)} if fans ignore prices, ${signedMoney(m1.dg)} at the published sensitivity, ${signedMoney(m2.dg)} at twice it.${be == null ? "" : ` Break-even at ${be.toFixed(2)}x.`}`);
+  $("sens-items").setAttribute("aria-label", `Items sold vs old prices: ${pct(m0.du)} if fans ignore prices, ${pct(m1.du)} at the published sensitivity, ${pct(m2.du)} at twice it.`);
+  const rows = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2].map(at);
+  $("sens-table").innerHTML = `<thead><tr><th>Price sensitivity</th><th>Gross vs old prices</th><th>Items sold vs old prices</th></tr></thead><tbody>`
+    + rows.map((c) => `<tr${nearS(c.s, state.sens) ? ' class="cur"' : ""}><td>${nearS(c.s, 1) ? "1x (published)" : nearS(c.s, 0) ? "0x (fans ignore prices)" : c.s + "x"}</td><td>${signedMoney(c.dg)} (${pct2(c.rg)})</td><td>${pct(c.du)}</td></tr>`).join("")
+    + `</tbody>`;
+  hideSens();
+}
+function showSensAt(s, srcId, clientX, clientY) {
+  const c = sensCurveCache.find((p) => nearS(p.s, s));
+  if (!c) return;
+  for (const id of ["sens-money", "sens-items"]) {
+    const g = sensGeom[id];
+    if (!g) continue;
+    const xh = $(id).querySelector(".xh");
+    if (!xh) continue;
+    const x = g.X(s).toFixed(1), y = g.Y(c[g.key]).toFixed(1);
+    const [ln, dot] = [xh.querySelector("line"), xh.querySelector("circle")];
+    ln.setAttribute("x1", x); ln.setAttribute("x2", x);
+    dot.setAttribute("cx", x); dot.setAttribute("cy", y);
+    xh.setAttribute("visibility", "visible");
+  }
+  const tip = $("sens-tip"), host = $("senscharts").getBoundingClientRect();
+  tip.querySelector(".t-s").textContent = sLabel(s);
+  tip.querySelector(".t-g").textContent = `${signedMoney(c.dg)} (${pct2(c.rg)})`;
+  tip.querySelector(".t-u").textContent = pct(c.du);
+  tip.hidden = false;
+  let left, top;
+  if (clientX == null) {
+    const r = $(srcId).getBoundingClientRect(), g = sensGeom[srcId];
+    left = r.left - host.left + g.X(s) * (r.width / g.W);
+    top = r.top - host.top + 40;
+  } else { left = clientX - host.left; top = clientY - host.top; }
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  let tx = left + 14;
+  if (tx + tw > host.width) tx = left - 14 - tw;
+  let ty = top - th - 10;
+  if (ty < 0) ty = top + 16;
+  tip.style.left = `${Math.max(0, tx)}px`;
+  tip.style.top = `${ty}px`;
+}
+function hideSens() {
+  document.querySelectorAll("#senscharts .xh").forEach((x) => x.setAttribute("visibility", "hidden"));
+  $("sens-tip").hidden = true;
+}
+function wireSensChart(id) {
+  const svg = $(id);
+  let keyS = null;
+  svg.addEventListener("pointermove", (e) => {
+    const g = sensGeom[id];
+    if (!g) return;
+    const r = svg.getBoundingClientRect();
+    const px = (e.clientX - r.left) * (g.W / r.width);
+    const s = Math.min(2, Math.max(0, Math.round(((px - g.L) / (g.W - g.L - g.R)) * 40) / 20));
+    showSensAt(s, id, e.clientX, e.clientY);
+  });
+  svg.addEventListener("pointerleave", hideSens);
+  svg.addEventListener("focus", () => { keyS = state.sens; showSensAt(keyS, id); });
+  svg.addEventListener("blur", hideSens);
+  svg.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+    e.preventDefault();
+    keyS = Math.min(2, Math.max(0, Math.round(((keyS ?? state.sens) + (e.key === "ArrowRight" ? 0.05 : -0.05)) * 20) / 20));
+    showSensAt(keyS, id);
+  });
+}
+
+function renderStats(all, lowAll, highAll) {
+  const gross = all.reduce((a, x) => a + x.f.gross, 0);
+  const grossOld = all.reduce((a, x) => a + x.f.grossOld, 0);
+  const units = all.reduce((a, x) => a + x.f.unitsTotal, 0);
+  const unitsOld = all.reduce((a, x) => a + x.f.unitsOld, 0);
+  const crowd = all.reduce((a, x) => a + x.f.crowd, 0);
+  const gLow = lowAll.reduce((a, x) => a + x.f.gross, 0);
+  const gHigh = highAll.reduce((a, x) => a + x.f.gross, 0);
+  const dG = gross / grossOld - 1, dU = units / unitsOld - 1;
+  $("stats").innerHTML = `
+    <div class="stat"><span class="label">Gross, 9 shows, 5 items</span><span class="value">${money0(gross)}</span>
+      <span class="sub"><span class="${deltaClass(dG)}">${pct(dG)}</span> vs the old prices (${money0(grossOld)})</span></div>
+    <div class="stat"><span class="label">Items sold</span><span class="value">${int(units)}</span>
+      <span class="sub"><span class="${deltaClass(dU)}">${pct(dU)}</span> vs the old prices</span></div>
+    <div class="stat"><span class="label">Crowd, all 9 shows</span><span class="value">${int(crowd)}</span>
+      <span class="sub">${state.scenario === "base" ? "Base case (Rule 2)" : state.scenario === "low" ? "Low scenario" : "High scenario"}</span></div>
+    <div class="stat"><span class="label">Gross range, low to high crowd</span><span class="value">$${Math.round(gLow / 1000)}K to $${Math.round(gHigh / 1000)}K</span>
+      <span class="sub">At your prices</span></div>`;
+}
+function renderUpcoming(all, lowAll, highAll) {
+  const max = Math.max(...highAll.map((x) => x.f.gross)) * 1.04;
+  const X = (v) => (v / max) * 100;
+  $("bars").innerHTML = all.map((x, k) => {
+    const lo = lowAll[k].f.gross, hi = highAll[k].f.gross, v = x.f.gross;
+    return `<div class="rowbar"><span class="who" title="${x.show.e} ${x.show.p}, ${x.show.genre}, ${x.show.day} ${x.show.time.toLowerCase()}"><strong>${x.show.e}</strong> <span class="muted">${x.show.p} · ${kind(x.show)}</span></span>
+      <span class="track" aria-hidden="true"><span class="whisker" style="left:${X(lo)}%;width:${Math.max(X(hi) - X(lo), 0.4)}%"></span><span class="cap" style="left:${X(lo)}%"></span><span class="cap" style="left:${X(hi)}%"></span><span class="pt" style="left:${X(v)}%;background:${gvar(x.show.group)}"></span></span>
+      <span class="val">${moneyK(v)}</span></div>`;
+  }).join("");
+  $("up-note").textContent = `Scale: $0 to ${moneyK(max)}`;
+  const head = `<thead><tr><th>Show</th><th>Group</th><th>Crowd</th>${ITEMS.map((it) => `<th>${SHORT[it.key]}</th>`).join("")}<th>Gross</th><th>vs old prices</th><th class="basis">Based on</th></tr></thead>`;
+  const body = all.map((x) => {
+    const d = x.f.gross - x.f.grossOld;
+    return `<tr><td><strong>${x.show.e}</strong> <span class="muted">${x.show.p}, ${x.show.day.slice(0, 3)} ${x.show.time.toLowerCase()}</span></td><td>${gchip(x.show.group)}</td><td>${int(x.f.crowd)}</td>${ITEMS.map((it) => `<td>${int(x.f.units[it.key])}</td>`).join("")}<td>${money0(x.f.gross)}</td><td class="${deltaClass(d / x.f.grossOld)}">${signedMoney(d)}</td><td class="basis muted">${x.show.basis === "own" ? "Own past shows" + (x.show.note ? ", " + x.show.note : "") : "Group average"}</td></tr>`;
+  }).join("");
+  const tot = (f) => all.reduce((a, x) => a + f(x), 0);
+  const dTot = tot((x) => x.f.gross) - tot((x) => x.f.grossOld);
+  const foot = `<tfoot><tr><td>Total</td><td></td><td>${int(tot((x) => x.f.crowd))}</td>${ITEMS.map((it) => `<td>${int(tot((x) => x.f.units[it.key]))}</td>`).join("")}<td>${money0(tot((x) => x.f.gross))}</td><td class="${deltaClass(dTot)}">${signedMoney(dTot)}</td><td></td></tr></tfoot>`;
+  $("uptable").innerHTML = head + `<tbody>${body}</tbody>` + foot;
+}
+
+const moneyC = (v) => "$" + v.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+function renderItems(all) {
+  const head = `<thead><tr><th class="sh">Show</th><th class="sh">Group</th><th class="it">Item</th><th>Projected units</th><th>Recommended price</th><th>Projected gross</th></tr></thead>`;
+  const body = all.map((x) => x.f.rows.map((r, k) => `<tr${k === 0 ? ' class="first"' : ""}>`
+    + (k === 0 ? `<td class="sh" rowspan="${x.f.rows.length}"><strong>${x.show.e}</strong> <span class="muted">${x.show.p}</span></td><td class="sh" rowspan="${x.f.rows.length}">${gchip(x.show.group)}</td>` : "")
+    + `<td class="it">${r.item_name}</td><td>${int(r.units)}</td><td>${money2(r.price)}</td><td>${moneyC(r.gross)}</td></tr>`).join("")).join("");
+  const units = all.reduce((a, x) => a + x.f.unitsTotal, 0), gross = all.reduce((a, x) => a + x.f.gross, 0);
+  $("itemtable").innerHTML = head + `<tbody>${body}</tbody><tfoot><tr><td class="sh" colspan="3">All 9 shows</td><td>${int(units)}</td><td></td><td>${moneyC(gross)}</td></tr></tfoot>`;
+  $("items-note").textContent = settingsLabel();
+}
+function renderGroupList() {
+  const past = Object.fromEntries(GROUPS.map((g) => [g, []])), next = Object.fromEntries(GROUPS.map((g) => [g, []]));
+  for (const h of DATA.history) past[h.group].push(h.e);
+  for (const u of DATA.upcoming) next[u.group].push(u.e);
+  $("grouplist").innerHTML = GROUPS.map((g) => `<div class="gl"><div class="gl-h">${gchip(g)}<span class="muted">${past[g].length} past, ${next[g].length} upcoming</span></div>`
+    + `<p><span class="muted">Past:</span> ${past[g].join(", ")}</p>`
+    + `<p><span class="muted">Upcoming:</span> ${next[g].length ? next[g].map((e) => `<strong>${e}</strong>`).join(", ") : "none on the schedule yet"}</p></div>`).join("");
+}
+
+const GENRES = { Concert: ["Rock", "Country", "Pop", "Hip-Hop / R&B", "Other"], Comedy: ["Clean", "Moderate"], Family: [], Sports: ["Hockey", "Combat", "Other"] };
+function syncGenreOptions() {
+  const type = $("p-type").value;
+  const list = GENRES[type];
+  $("f-genre").hidden = list.length === 0;
+  const cur = $("p-genre").value;
+  $("p-genre").innerHTML = list.map((g) => `<option${g === cur ? " selected" : ""}>${g}</option>`).join("");
+  $("f-male").hidden = type !== "Family";
+}
+function renderPlanner() {
+  const type = $("p-type").value, genre = $("p-genre").value, time = $("p-time").value;
+  const male = parseInt($("p-male").value, 10);
+  $("p-male-v").textContent = male + "%";
+  const fans = Math.max(0, parseFloat($("p-fans").value) || 0);
+  const r = planShow(type, genre, time, male, fans, state.card, state.sens);
+  const st = DATA.groupStats[r.group];
+  $("p-verdict").innerHTML = `<span class="dot" style="background:${gvar(r.group)};width:14px;height:14px"></span><span class="g">${r.group}</span><span class="why">${r.why} Past shows in this group spent $${st.alc.toFixed(1)} a head on alcohol.</span>`;
+  $("p-table").innerHTML = `<thead><tr><th>Item</th><th>Price</th><th>Units</th><th>Gross</th></tr></thead><tbody>${r.rows.map((x) => `<tr><td>${LABEL[x.key]}</td><td>${money2(x.price)}</td><td>${int(x.units)}</td><td>${money0(x.gross)}</td></tr>`).join("")}</tbody><tfoot><tr><td>Total</td><td></td><td>${int(r.rows.reduce((a, x) => a + x.units, 0))}</td><td>${money0(r.gross)}</td></tr></tfoot>`;
+  const perFan = fans > 0 ? r.gross / fans : 0;
+  $("p-note").textContent = `That is ${money2(perFan)} per fan on these five items.` + (r.daytimeAdult ? " Daytime adult show: units adjusted with P25's daytime/evening ratios (much less alcohol, more water and pretzels)." : "") + " Prices come from the price card above.";
+}
+
+function renderMaps() {
+  // Small multiples: one panel per group, so no reader has to match five colors in one scatter.
+  const host = $("maps");
+  if (!host.children.length) {
+    host.innerHTML = GROUPS.map((g, k) => {
+      const st = DATA.groupStats[g];
+      return `<figure class="mfig"><figcaption>${gchip(g)}<span class="meta">${st.shows} past shows · $${st.alc.toFixed(1)} alcohol, $${st.spend.toFixed(1)} in total per fan</span></figcaption><svg id="map-${k}" role="img"></svg></figure>`;
+    }).join("");
+    const rows = [...DATA.history].sort((a, b) => GROUPS.indexOf(a.group) - GROUPS.indexOf(b.group) || b.alc - a.alc);
+    $("past-table").innerHTML = `<thead><tr><th>Show</th><th>Group</th><th>Kind</th><th>Tickets</th><th>Alcohol per fan</th><th>Food + soft drinks per fan</th><th>All concessions per fan</th></tr></thead><tbody>`
+      + rows.map((h) => `<tr><td><strong>${h.e}</strong> <span class="muted">${h.p}</span></td><td>${gchip(h.group)}</td><td>${kind(h)}</td><td>${int(h.tickets)}</td><td>${money2(h.alc)}</td><td>${money2(h.oth)}</td><td>${money2(h.spend)}</td></tr>`).join("")
+      + `</tbody>`;
+  }
+  GROUPS.forEach((g, k) => drawMap(k, g));
+}
+function drawMap(k, g) {
+  const svg = $(`map-${k}`);
+  const W = Math.max(260, Math.min(700, Math.round(svg.parentElement.clientWidth || 320)));
+  const H = Math.round(Math.max(200, Math.min(250, W * 0.68)));
+  const L = 40, R = 10, T = 8, B = 36;
+  const xMax = 21, yMin = 2, yMax = 10;
+  const X = (v) => L + (v / xMax) * (W - L - R);
+  const Y = (v) => H - B - ((Math.min(yMax, Math.max(yMin, v)) - yMin) / (yMax - yMin)) * (H - B - T);
+  svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
+  let s = "";
+  for (const v of [0, 10, 20]) s += `<line x1="${X(v).toFixed(1)}" x2="${X(v).toFixed(1)}" y1="${T}" y2="${H - B}" stroke="var(--line)"/><text x="${X(v).toFixed(1)}" y="${H - B + 16}" text-anchor="middle" font-size="11.5" fill="var(--ink-3)">$${v}</text>`;
+  for (const v of [2, 6, 10]) s += `<line x1="${L}" x2="${W - R}" y1="${Y(v).toFixed(1)}" y2="${Y(v).toFixed(1)}" stroke="var(--line)"/><text x="${L - 6}" y="${(Y(v) + 4).toFixed(1)}" text-anchor="end" font-size="11.5" fill="var(--ink-3)">$${v}</text>`;
+  s += `<text x="${((L + W - R) / 2).toFixed(1)}" y="${H - 4}" text-anchor="middle" font-size="11.5" fill="var(--ink-2)">alcohol per ticket</text>`;
+  for (const h of DATA.history) if (h.group !== g) s += `<circle cx="${X(h.alc).toFixed(1)}" cy="${Y(h.oth).toFixed(1)}" r="3.5" fill="var(--ink-3)" fill-opacity="0.3"/>`;
+  for (const h of DATA.history) {
+    if (h.group !== g) continue;
+    const cx = X(h.alc).toFixed(1), cy = Y(h.oth).toFixed(1);
+    s += `<circle cx="${cx}" cy="${cy}" r="5.5" fill="${gvar(g)}" stroke="var(--surface)" stroke-width="2"/>`;
+    s += `<circle cx="${cx}" cy="${cy}" r="12" fill="transparent"><title>${h.e} (${h.p}), ${kind(h)}: $${h.alc.toFixed(2)} alcohol and $${h.oth.toFixed(2)} food + soft drinks per ticket, ${h.tickets.toLocaleString("en-US")} tickets</title></circle>`;
+  }
+  svg.innerHTML = s;
+  const st = DATA.groupStats[g];
+  svg.setAttribute("aria-label", `${g}: ${st.shows} past shows, about $${st.alc.toFixed(1)} on alcohol and $${st.spend.toFixed(1)} in total per fan, compared with the other shows in gray`);
+}
+
+function setSeg(id, value) {
+  document.querySelectorAll(`#${id} button`).forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.v === String(value))));
+}
+function updateAll(rebuildBoard) {
+  if (rebuildBoard) renderBoard(); else updateBoardDeltas();
+  setSeg("scenario", state.scenario);
+  setSeg("sens", state.sens);
+  const all = forecastAll(state.card, state.scenario, state.sens);
+  const lowAll = forecastAll(state.card, "low", state.sens);
+  const highAll = forecastAll(state.card, "high", state.sens);
+  renderStats(all, lowAll, highAll);
+  renderPast();
+  renderSens();
+  renderUpcoming(all, lowAll, highAll);
+  renderItems(all);
+  renderPlanner();
+}
+
+/* ---------- files ---------- */
+function forecastCSV() {
+  const rows = forecastAll(state.card, state.scenario, state.sens).flatMap((x) => x.f.rows).map((r) => ({
+    event_id: r.event_id, item_name: r.item_name, projected_units: r.units, recommended_price: r.price.toFixed(2), projected_gross_sales: r.gross.toFixed(2),
+  }));
+  return toCSV(rows, ["event_id", "item_name", "projected_units", "recommended_price", "projected_gross_sales"]);
+}
+function groupsCSV() {
+  const rows = DATA.historicalGroups.concat(DATA.upcoming.map((s) => ({ e: s.e, group: s.group }))).map((r) => ({ event_id: r.e, group: r.group }));
+  return toCSV(rows, ["event_id", "group"]);
+}
+function cardName() {
+  const now = JSON.stringify(state.card);
+  for (const [k, label] of [["ours", "our card"], ["paid", "past prices"], ["menu", "current menu"]]) {
+    if (JSON.stringify(PRESETS[k]()) === now) return label;
+  }
+  return "an edited card";
+}
+function settingsLabel() {
+  const crowd = { low: "Low", base: "Base", high: "High" }[state.scenario];
+  const sens = state.sens === 1 ? "as published" : state.sens === 0.5 ? "half" : "1.5x";
+  return `${crowd} crowd, sensitivity ${sens}, ${cardName()}`;
+}
+function offer(filename, text, withSettings) {
+  const what = withSettings ? ` (${settingsLabel()})` : "";
+  try {
+    const url = URL.createObjectURL(new Blob([text], { type: "text/csv;charset=utf-8" }));
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    $("status").textContent = `Downloaded ${filename}${what}.`;
+  } catch (e) {
+    copyText(text, filename, what);
+  }
+}
+async function copyText(text, filename, what = "") {
+  try {
+    await navigator.clipboard.writeText(text);
+    $("status").textContent = `Copied ${filename}${what} to the clipboard. Paste it into a .csv file.`;
+  } catch (e) {
+    $("status").textContent = "This browser blocked the download. The notebook writes the same files.";
+  }
+}
+
+/* ---------- wiring ---------- */
+loadSaved();
+document.querySelectorAll("#scenario button").forEach((b) => b.addEventListener("click", () => { state.scenario = b.dataset.v; save(); updateAll(false); }));
+document.querySelectorAll("#sens button").forEach((b) => b.addEventListener("click", () => { state.sens = parseFloat(b.dataset.v); save(); updateAll(false); }));
+document.querySelectorAll("[data-preset]").forEach((b) => b.addEventListener("click", () => { state.card = PRESETS[b.dataset.preset](); save(); updateAll(true); $("status").textContent = `Price card set to: ${b.textContent}.`; }));
+$("dl-forecast").addEventListener("click", () => offer("upcoming_forecast.csv", forecastCSV(), true));
+$("dl-groups").addEventListener("click", () => offer("event_groups.csv", groupsCSV(), false));
+$("p-type").addEventListener("change", () => { syncGenreOptions(); renderPlanner(); });
+["p-genre", "p-time"].forEach((id) => $(id).addEventListener("change", renderPlanner));
+["p-male", "p-fans"].forEach((id) => $(id).addEventListener("input", renderPlanner));
+$("planform").addEventListener("submit", (e) => e.preventDefault());
+$("p-genre").innerHTML = GENRES.Concert.map((g) => `<option${g === "Country" ? " selected" : ""}>${g}</option>`).join("");
+syncGenreOptions();
+renderMaps();
+renderGroupList();
+updateAll(true);
+if (state.scenario !== "base" || state.sens !== 1 || cardName() !== "our card") {
+  $("status").textContent = `Picked up where you left off: ${settingsLabel()}. Click "Our card", Base and As published to go back to the team's choices.`;
+}
+try {
+  let mapW = $("maps").clientWidth;
+  new ResizeObserver(() => {
+    const w = $("maps").clientWidth;
+    if (Math.abs(w - mapW) > 4) { mapW = w; renderMaps(); }
+  }).observe($("maps"));
+} catch (e) { /* older browser: the map keeps its first size */ }
+wireSensChart("sens-money");
+wireSensChart("sens-items");
+try {
+  let sensW = $("senscharts").clientWidth;
+  new ResizeObserver(() => {
+    const w = $("senscharts").clientWidth;
+    if (Math.abs(w - sensW) > 4) { sensW = w; renderSens(); }
+  }).observe($("senscharts"));
+} catch (e) { /* older browser: charts keep their first size */ }
+</script>
+</body>
+</html>
