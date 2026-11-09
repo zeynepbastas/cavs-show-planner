@@ -3,7 +3,7 @@
 **Concessions Pricing Challenge · Sports Business & Analytics Night 2026**
 Zeynep Baştaş, Blessing Masanga, Daniel Youngquist · Case Western Reserve University
 
-**Live app:** https://cwru-show-planner.streamlit.app
+**Live app:** https://zeynepbastas-cavs-show-planner.streamlit.app
 
 Place any show in one of our five crowd groups, forecast what its fans will buy, and test prices before the doors open.
 
